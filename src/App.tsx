@@ -124,6 +124,7 @@ interface Job {
   desc: string;
   ratingCount?: number;
   ratingsList?: number[];
+  status?: "active" | "pending" | "completed";
 }
 
 interface Category {
@@ -473,6 +474,136 @@ const JobCard = ({job,t,onClick}: JobCardProps)=>{
   );
 };
 
+const HorizontalJobCard = ({ job, t, onClick }: JobCardProps) => {
+  const cat = CATS.find(c => c.id === job.catId);
+  const isWork = job.type === "need-worker";
+  const [hov, setHov] = useState(false);
+  
+  const gradients = [
+    `linear-gradient(135deg, ${C.blue}1A, ${C.blueDeep}2A)`,
+    `linear-gradient(135deg, ${C.green}1A, ${C.green}30)`,
+    `linear-gradient(135deg, ${C.orange}1A, ${C.orange}35)`,
+    `linear-gradient(135deg, #8B5CF61A, #8B5CF630)`
+  ];
+  const bgGrad = gradients[job.id % gradients.length];
+
+  return (
+    <div onClick={onClick}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? t.cardHover : t.card,
+        border: `1.5px solid ${t.border}`,
+        borderRadius: 14,
+        width: 170,
+        flexShrink: 0,
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+        boxShadow: hov ? t.shadow : t.shadowCard,
+        direction: "rtl",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden"
+      }}>
+      
+      {/* Decorative Top Thumbnail/Cover */}
+      <div style={{
+        background: bgGrad,
+        height: 90,
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderBottom: `1px solid ${t.border}`
+      }}>
+        <span style={{ fontSize: 36, filter: "drop-shadow(0 4.5px 8px rgba(0,0,0,0.1))" }}>
+          {cat?.emoji || "🛠️"}
+        </span>
+        
+        {/* Urgent Badge */}
+        {job.urgent && (
+          <span style={{
+            position: "absolute",
+            top: 6,
+            right: 6,
+            background: C.orange,
+            color: "white",
+            fontSize: 9,
+            fontWeight: 800,
+            padding: "2px 6px",
+            borderRadius: 6,
+            boxShadow: "0 2px 5px rgba(249,115,22,0.3)"
+          }}>
+            ⚡ عاجل
+          </span>
+         )}
+
+         {/* Type Tag */}
+         <span style={{
+           position: "absolute",
+           bottom: 6,
+           right: 6,
+           background: isWork ? t.blueBg : t.greenBg,
+           color: isWork ? C.blue : C.green,
+           border: `1px solid ${isWork ? t.blueBorder : C.green + "33"}`,
+           fontSize: 8,
+           fontWeight: 800,
+           padding: "1px 5px",
+           borderRadius: 4
+         }}>
+           {isWork ? "مطلوب" : "عرض عمل"}
+         </span>
+      </div>
+
+      {/* Body Info */}
+      <div style={{ padding: 10, display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
+        <div>
+          {/* Price */}
+          <div style={{
+            color: t.text,
+            fontSize: 13,
+            fontWeight: 800,
+            marginBottom: 4,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis"
+          }}>
+            {job.price.toLocaleString()} ج.م <span style={{ fontSize: 10, color: t.textSec, fontWeight: 500 }}>/ {job.unit}</span>
+          </div>
+
+          {/* Title */}
+          <h4 style={{
+            color: t.text,
+            fontSize: 11,
+            fontWeight: 700,
+            margin: "0 0 6px",
+            lineHeight: 1.3,
+            height: 28,
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            textOverflow: "ellipsis"
+          }}>
+            {job.title}
+          </h4>
+        </div>
+
+        {/* Footer info: Location + time */}
+        <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 6, marginTop: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 3, color: t.textMuted, fontSize: 9, marginBottom: 2 }}>
+            <Svg d={ic.pin} s={9} c={t.textMuted} />
+            <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>{job.loc}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 3, color: t.textMuted, fontSize: 9 }}>
+            <Svg d={ic.clock} s={9} c={t.textMuted} />
+            <span>{job.age}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ═══════════════════════════════════════════
    SCREEN: HOME
 ═══════════════════════════════════════════ */
@@ -642,8 +773,16 @@ const HomeScreen = ({
       {/* ── CATEGORIES SCROLL ── */}
       <div style={{paddingTop:16,paddingBottom:4}}>
         <SectionHead title="الفئات" action="عرض الكل" onAction={onCats} t={t}/>
-        <div style={{display:"flex",gap:8,padding:"0 16px",overflowX:"auto",
-          scrollbarWidth:"none",direction:"rtl",paddingBottom:6}}>
+        <div style={{
+          display: "grid",
+          gridAutoFlow: "column",
+          gridTemplateRows: "repeat(2, minmax(0, 1fr))",
+          gap: "8px 10px",
+          padding: "0 16px 8px",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          direction: "rtl"
+        }}>
           {CATS.map(c=>(
             <button key={c.id} onClick={()=>{
               if (catFilter === c.id) {
@@ -922,14 +1061,67 @@ const HomeScreen = ({
       </div>
 
       {/* ── LISTINGS ── */}
-      <div style={{padding:"4px 12px"}}>
-        {jobs.length===0
-          ?<div style={{textAlign:"center",padding:"60px 20px"}}>
+      <div style={{padding:"4px 12px 24px"}}>
+        {jobs.length === 0 ? (
+          <div style={{textAlign:"center",padding:"60px 20px"}}>
             <div style={{fontSize:36,marginBottom:12,opacity:0.3}}>🔍</div>
             <div style={{color:t.textMuted,fontSize:13}}>لا توجد نتائج مطابقة</div>
           </div>
-          :jobs.map(j=><JobCard key={j.id} job={j} t={t} onClick={()=>onJob(j)}/>)
-        }
+        ) : (
+          catFilter || subFilter ? (
+            // A specific category/sub-specialty is active: Show standard vertical listing
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, direction: "rtl", padding: "0 4px" }}>
+                <h3 style={{ color: t.text, fontSize: 13, fontWeight: 800, margin: 0 }}>النتائج المتاحة ({jobs.length})</h3>
+                <span style={{ color: t.textMuted, fontSize: 11 }}>تصفية نشطة ⚡</span>
+              </div>
+              {jobs.map(j => (
+                <JobCard key={j.id} job={j} t={t} onClick={() => onJob(j)} />
+              ))}
+            </div>
+          ) : (
+            // Default home view: Group ads by category matching the query/filter (up to 10 ads per category, scrolling horizontally)
+            <div>
+              {CATS.map(cat => {
+                const catJobs = jobs.filter(j => j.catId === cat.id);
+                if (catJobs.length === 0) return null;
+                const latestJobs = catJobs.slice(0, 10);
+
+                return (
+                  <div key={cat.id} style={{ marginBottom: 22, direction: "rtl" }}>
+                    {/* Section Header */}
+                    <SectionHead 
+                      title={`${cat.emoji} ${cat.ar}`} 
+                      action="عرض الكل" 
+                      onAction={() => {
+                        setCatFilter(cat.id);
+                        setSubFilter(null);
+                      }} 
+                      t={t} 
+                    />
+                    
+                    {/* Horizontal Scroll Rail */}
+                    <div style={{
+                      display: "flex",
+                      gap: 12,
+                      overflowX: "auto",
+                      scrollbarWidth: "none",
+                      padding: "4px 4px 12px",
+                      margin: "0 -4px",
+                      scrollSnapType: "x mandatory"
+                    }}>
+                      {latestJobs.map(j => (
+                        <div key={j.id} style={{ scrollSnapAlign: "start" }}>
+                          <HorizontalJobCard job={j} t={t} onClick={() => onJob(j)} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
       </div>
     </div>
   );
@@ -2440,6 +2632,10 @@ const ProfileScreen=({
     }
   };
 
+  const handleSetAdStatus = (jobId: number, status: "active" | "pending" | "completed") => {
+    setJobsList(prev => prev.map(j => j.id === jobId ? { ...j, status } : j));
+  };
+
   const handleDeleteAd = (jobId: number) => {
     if (confirm("هل أنت متأكد من رغبتك في حذف هذا الإعلان نهائياً؟")) {
       setJobsList(prev => prev.filter(j => j.id !== jobId));
@@ -2640,10 +2836,31 @@ const ProfileScreen=({
                   <p style={{ fontSize: 11, color: t.textMuted, margin: "0 0 6px" }}>ادمج، عدل، أو عطل إعلاناتك المعروضة في التطبيق لتعديل رغباتك:</p>
                   {myAds.map(ad => {
                     const isSuspended = suspendedAds.includes(ad.id);
+                    const currentStatus = ad.status || "active";
+                    
+                    // Set up badge status colors and labels
+                    let statusLabel = "نشط";
+                    let statusColor = C.green;
+                    let statusBg = C.greenBg;
+                    
+                    if (isSuspended) {
+                      statusLabel = "موقوف مؤقتاً";
+                      statusColor = t.textMuted;
+                      statusBg = t.border;
+                    } else if (currentStatus === "pending") {
+                      statusLabel = "قيد المراجعة";
+                      statusColor = C.orange;
+                      statusBg = C.orangeBg;
+                    } else if (currentStatus === "completed") {
+                      statusLabel = "مكتمل";
+                      statusColor = C.blue;
+                      statusBg = C.blue + "15";
+                    }
+
                     return (
                       <div key={ad.id} style={{
                         background: t.card,
-                        border: `1.5px solid ${isSuspended ? t.border : C.blue}33`,
+                        border: `1.5px solid ${isSuspended ? t.border : (currentStatus === "pending" ? C.orange : (currentStatus === "completed" ? C.blue : C.blue))}33`,
                         borderRadius: 12,
                         padding: 12,
                         opacity: isSuspended ? 0.65 : 1,
@@ -2651,14 +2868,18 @@ const ProfileScreen=({
                       }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                           <span style={{
-                            background: isSuspended ? t.border : C.blue + "15",
-                            color: isSuspended ? t.textMuted : C.blue,
+                            background: statusBg,
+                            color: statusColor,
                             fontSize: 9,
                             fontWeight: 800,
-                            padding: "2px 6px",
-                            borderRadius: 6
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4
                           }}>
-                            {isSuspended ? "موقوف مؤقتاً" : "نشط"}
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: statusColor, display: "inline-block" }}></span>
+                            {statusLabel}
                           </span>
                           <span style={{ fontSize: 12, fontWeight: 800, color: C.green }}>{ad.price} ج.م {ad.unit}</span>
                         </div>
@@ -2668,6 +2889,51 @@ const ProfileScreen=({
                           <span>📩 {ad.apps} تطبيق</span>
                           <span>📍 {ad.loc}</span>
                         </div>
+
+                        {/* Interactive Status Switcher (only when not suspended) */}
+                        {!isSuspended && (
+                          <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            background: t.surface,
+                            padding: "6px 10px",
+                            borderRadius: 8,
+                            border: `1px solid ${t.border}`,
+                            marginBottom: 10,
+                            direction: "rtl"
+                          }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: t.textSec }}>حالة الإعلان:</span>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              {[
+                                { statusKey: "active", label: "نشط", color: C.green, bg: C.greenBg },
+                                { statusKey: "pending", label: "مراجعة", color: C.orange, bg: C.orangeBg },
+                                { statusKey: "completed", label: "مكتمل", color: C.blue, bg: C.blue + "15" }
+                              ].map(st => {
+                                const isCurrent = currentStatus === st.statusKey;
+                                return (
+                                  <button
+                                    key={st.statusKey}
+                                    onClick={() => handleSetAdStatus(ad.id, st.statusKey as any)}
+                                    style={{
+                                      background: isCurrent ? st.bg : "none",
+                                      color: isCurrent ? st.color : t.textMuted,
+                                      border: isCurrent ? `1px solid ${st.color}55` : "1px solid transparent",
+                                      borderRadius: 6,
+                                      padding: "3px 8px",
+                                      fontSize: 10,
+                                      fontWeight: 800,
+                                      cursor: "pointer",
+                                      transition: "all 0.1s"
+                                    }}>
+                                    {st.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                           <button onClick={() => onViewJob(ad)}
                             style={{
