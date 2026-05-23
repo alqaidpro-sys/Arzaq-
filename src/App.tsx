@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Cell } from "recharts";
 
 /* ═══════════════════════════════════════════════════════════
    DESIGN SYSTEM — Dubizzle-grade professional
@@ -108,6 +109,7 @@ interface Job {
   type: string;
   title: string;
   catId: string;
+  sub?: string;
   loc: string;
   price: number;
   unit: string;
@@ -268,14 +270,14 @@ const CATS: Category[] = [
 ];
 
 const JOBS: Job[] = [
-  { id:1,  type:"need-worker", title:"مطلوب سباك لإصلاح تسرب مياه عاجل",     catId:"plumb",  loc:"طنطا، الغربية",    price:300, unit:"ثابت",  urgent:true,  age:"منذ ساعتين",  views:47,  apps:3,  poster:"أ.م", pName:"أحمد محمد",  verified:true,  stars:4.8, desc:"تسرب في الخط الرئيسي بالحمام. نحتاج سباك ذو خبرة للإصلاح الفوري. العمل لن يأخذ أكثر من ساعتين. توفير قطع الغيار على حسابنا." },
-  { id:2,  type:"need-worker", title:"تنظيف شامل للشقة قبل الانتقال",          catId:"clean",  loc:"القاهرة الجديدة",  price:250, unit:"ثابت",  urgent:false, age:"منذ 5 ساعات", views:89,  apps:7,  poster:"س.ك", pName:"سارة كمال",   verified:false, stars:4.5, desc:"شقة 120م، ثلاث غرف، تنظيف عميق شامل للأرضيات والحوائط والنوافذ والحمامات والمطبخ. مطلوب فريق من شخصين على الأقل." },
-  { id:3,  type:"need-job",    title:"كهربائي معتمد — ١٠ سنوات خبرة",         catId:"elec",   loc:"طنطا",              price:150, unit:"/ يوم", urgent:false, age:"منذ يوم",      views:134, apps:0,  poster:"ع.ف", pName:"علاء فاروق",  verified:true,  stars:4.9, desc:"كهربائي محترف معتمد، متخصص في التمديدات الكهربائية ولوحات التوزيع وتركيب الإضاءة. أعمل بكفاءة وأضمن جميع الأعمال." },
-  { id:4,  type:"need-worker", title:"دهان غرفة نوم — لون وتصميم محدد",        catId:"paint",  loc:"مدينة نصر",        price:200, unit:"ثابت",  urgent:false, age:"منذ 3 أيام",  views:56,  apps:4,  poster:"س.ع", pName:"سامي عادل",   verified:false, stars:0,   desc:"غرفة نوم 3×4 متر. عندنا الدهان والأدوات. المطلوب الخبرة والعمالة فقط. اللون تحديد عند التواصل." },
-  { id:5,  type:"need-job",    title:"نجار أثاث محترف — تصنيع وتركيب",        catId:"carp",   loc:"6 أكتوبر",         price:200, unit:"/ يوم", urgent:false, age:"منذ يومين",   views:98,  apps:0,  poster:"ن.م", pName:"نادر مصطفى",  verified:true,  stars:4.7, desc:"متخصص في صناعة الأثاث المنزلي والمطابخ والديكور الخشبي. خبرة 15 سنة، أنجزت أكثر من 500 مشروع سابق." },
-  { id:6,  type:"need-worker", title:"نقل عفش كامل — شقة ثلاث أوضة",          catId:"move",   loc:"الشيخ زايد",       price:500, unit:"ثابت",  urgent:true,  age:"منذ ساعة",    views:23,  apps:2,  poster:"ه.س", pName:"هاني سمير",   verified:false, stars:4.2, desc:"نقل عفش كامل من الشيخ زايد إلى مدينة نصر. يشمل التغليف والتحميل والتفريغ. يفضل وجود عمالة مع اللوري." },
-  { id:7,  type:"need-worker", title:"تركيب وصيانة مكيفات — 3 وحدات",          catId:"ac",     loc:"طنطا",              price:400, unit:"ثابت",  urgent:false, age:"منذ 6 ساعات", views:61,  apps:5,  poster:"م.ر", pName:"محمود رضا",   verified:true,  stars:4.6, desc:"تركيب 3 مكيفات سبليت في شقة جديدة. المكيفات موجودة. نحتاج فني متخصص مع أدوات التركيب." },
-  { id:8,  type:"need-job",    title:"عامل تنظيف يومي — متاح فوراً",           catId:"clean",  loc:"طنطا، الغربية",    price:120, unit:"/ يوم", urgent:false, age:"منذ 3 أيام",  views:77,  apps:0,  poster:"ك.أ", pName:"كريم أحمد",   verified:false, stars:4.0, desc:"عامل تنظيف منازل ومكاتب بخبرة 5 سنوات. أعمل بمفردي أو ضمن فريق. لدي جميع مستلزمات التنظيف." },
+  { id:1,  type:"need-worker", title:"مطلوب سباك لإصلاح تسرب مياه عاجل",     catId:"plumb",  sub:"إصلاح تسربات", loc:"طنطا، الغربية",    price:300, unit:"ثابت",  urgent:true,  age:"منذ ساعتين",  views:47,  apps:3,  poster:"أ.م", pName:"أحمد محمد",  verified:true,  stars:4.8, desc:"تسرب في الخط الرئيسي بالحمام. نحتاج سباك ذو خبرة للإصلاح الفوري. العمل لن يأخذ أكثر من ساعتين. توفير قطع الغيار على حسابنا." },
+  { id:2,  type:"need-worker", title:"تنظيف شامل للشقة قبل الانتقال",          catId:"clean",  sub:"تنظيف منازل",  loc:"القاهرة الجديدة",  price:250, unit:"ثابت",  urgent:false, age:"منذ 5 ساعات", views:89,  apps:7,  poster:"س.ك", pName:"سارة كمال",   verified:false, stars:4.5, desc:"شقة 120م، ثلاث غرف، تنظيف عميق شامل للأرضيات والحوائط والنوافذ والحمامات والمطبخ. المطلوب فريق من شخصين على الأقل." },
+  { id:3,  type:"need-job",    title:"كهربائي معتمد — ١٠ سنوات خبرة",         catId:"elec",   sub:"تمديدات كهربائية", loc:"طنطا",              price:150, unit:"/ يوم", urgent:false, age:"منذ يوم",      views:134, apps:0,  poster:"ع.ف", pName:"علاء فاروق",  verified:true,  stars:4.9, desc:"كهربائي محترف معتمد، متخصص في التمديدات الكهربائية ولوحات التوزيع وتركيب الإضاءة. أعمل بكفاءة وأضمن جميع الأعمال." },
+  { id:4,  type:"need-worker", title:"دهان غرفة نوم — لون وتصميم محدد",        catId:"paint",  sub:"دهان داخلي",  loc:"مدينة نصر",        price:200, unit:"ثابت",  urgent:false, age:"منذ 3 أيام",  views:56,  apps:4,  poster:"س.ع", pName:"سامي عادل",   verified:false, stars:0,   desc:"غرفة نوم 3×4 متر. عندنا الدهان والأدوات. المطلوب الخبرة والعمالة فقط. اللون تحديد عند التواصل." },
+  { id:5,  type:"need-job",    title:"نجار أثاث محترف — تصنيع وتركيب",        catId:"carp",   sub:"أثاث خشبي",   loc:"6 أكتوبر",         price:200, unit:"/ يوم", urgent:false, age:"منذ يومين",   views:98,  apps:0,  poster:"ن.م", pName:"نادر مصطفى",  verified:true,  stars:4.7, desc:"متخصص في صناعة الأثاث المنزلي والمطابخ والديكور الخشبي. خبرة 15 سنة، أنجزت أكثر من 500 مشروع سابق." },
+  { id:6,  type:"need-worker", title:"نقل عفش كامل — شقة ثلاث أوضة",          catId:"move",   sub:"نقل أثاث",    loc:"الشيخ زايد",       price:500, unit:"ثابت",  urgent:true,  age:"منذ ساعة",    views:23,  apps:2,  poster:"ه.س", pName:"هاني سمير",   verified:false, stars:4.2, desc:"نقل عفش كامل من الشيخ زايد إلى مدينة نصر. يشمل التغليف والتحميل والتفريغ. يفضل وجود عمالة مع اللوري." },
+  { id:7,  type:"need-worker", title:"تركيب وصيانة مكيفات — 3 وحدات",          catId:"ac",     sub:"تركيب مكيفات", loc:"طنطا",              price:400, unit:"ثابت",  urgent:false, age:"منذ 6 ساعات", views:61,  apps:5,  poster:"م.ر", pName:"محمود رضا",   verified:true,  stars:4.6, desc:"تركيب 3 مكيفات سبليت في شقة جديدة. المكيفات موجودة. نحتاج فني متخصص مع أدوات التركيب." },
+  { id:8,  type:"need-job",    title:"عامل تنظيف يومي — متاح فوراً",           catId:"clean",  sub:"تنظيف منازل",  loc:"طنطا، الغربية",    price:120, unit:"/ يوم", urgent:false, age:"منذ 3 أيام",  views:77,  apps:0,  poster:"ك.أ", pName:"كريم أحمد",   verified:false, stars:4.0, desc:"عامل تنظيف منازل ومكاتب بخبرة 5 سنوات. أعمل بمفردي أو ضمن فريق. لدي جميع مستلزمات التنظيف." },
 ];
 
 interface ChatMessage {
@@ -481,15 +483,105 @@ interface HomeScreenProps {
   onJob: (job: Job) => void;
   onCats: () => void;
   selectedLocation: "all" | "tanta" | "cairo";
+  catFilter: string | null;
+  setCatFilter: (v: string | null) => void;
+  subFilter: string | null;
+  setSubFilter: (v: string | null) => void;
 }
 
-const HomeScreen = ({jobsList,t,dark,onJob,onCats,selectedLocation}: HomeScreenProps)=>{
+const HomeScreen = ({
+  jobsList,
+  t,
+  dark,
+  onJob,
+  onCats,
+  selectedLocation,
+  catFilter,
+  setCatFilter,
+  subFilter,
+  setSubFilter
+}: HomeScreenProps)=>{
   const [filter,setFilter]=useState("all");
-  const [catFilter,setCatFilter]=useState<string | null>(null);
+  const [showPriceGuide, setShowPriceGuide] = useState(true);
+
+  // Arabic mapping for selectedLocation
+  const locationArName = selectedLocation === "all" 
+    ? "كل المحافظات" 
+    : (selectedLocation === "tanta" ? "طنطا والغربية" : "القاهرة الكبرى");
+
+  const locationMultiplier = selectedLocation === "all" 
+    ? 1.0 
+    : (selectedLocation === "tanta" ? 0.85 : 1.25);
+
+  // Default professions to compare when no category is selected
+  const defaultProfessions = [
+    { name: "تنظيف", price: 180, id: "clean" },
+    { name: "سباكة", price: 250, id: "plumb" },
+    { name: "كهرباء", price: 220, id: "elec" },
+    { name: "دهانات", price: 230, id: "paint" },
+    { name: "نجارة", price: 240, id: "carp" },
+    { name: "تكييف", price: 300, id: "ac" }
+  ];
+
+  const catSubPrices: Record<string, Record<string, number>> = {
+    clean: { "تنظيف منازل": 220, "مكاتب": 300, "بعد البناء": 450, "خزانات": 350, "سجاد": 150, "واجهات زجاج": 380 },
+    plumb: { "إصلاح تسربات": 240, "تركيب أدوات صحية": 320, "شبكات مياه": 450, "صرف صحي": 280, "سخانات": 190 },
+    elec: { "تمديدات كهربائية": 350, "تركيب إضاءة": 150, "لوحات توزيع": 400, "صيانة أجهزة": 200, "طاقة شمسية": 600 },
+    build: { "ترميم وبناء": 400, "باطون وتشطيبات": 450, "جبسون بورد": 300, "حجر وبلاط": 350, "عزل مائي": 420 },
+    move: { "نقل أثاث": 550, "شحن بضائع": 450, "رافعة هيدروليك": 700, "تخزين": 280, "تغليف": 180 },
+    paint: { "دهان داخلي": 250, "دهان خارجي": 350, "ورق حائط": 200, "ديكور": 300, "عزل حراري": 380 },
+    ac: { "تركيب مكيفات": 350, "صيانة وإصلاح": 250, "شحن فريون": 400, "تنظيف فلاتر": 150, "تكييف مركزي": 800 },
+    carp: { "أثاث خشبي": 300, "مطابخ": 450, "أبواب وشبابيك": 200, "ديكور حديد": 350, "أرضيات باركيه": 400 },
+    guard: { "حراسة مباني": 180, "حارس شخصي": 500, "كاميرات مراقبة": 250, "أنظمة إنذار": 300 },
+    garden: { "تنسيق حدائق": 300, "قص أشجار": 150, "ري أوتوماتيك": 400, "زراعة نباتات": 120 }
+  };
+
+  const currentProfessionName = React.useMemo(() => {
+    if (subFilter) return subFilter;
+    if (catFilter) {
+      return CATS.find(c => c.id === catFilter)?.ar || "المهنة المحددة";
+    }
+    return "كل المهن";
+  }, [catFilter, subFilter]);
+
+  const priceChartData = React.useMemo(() => {
+    // If a category filter is active
+    if (catFilter) {
+      const catObj = CATS.find(c => c.id === catFilter);
+      if (catObj) {
+        const subs = catObj.subs;
+        const pricesObj = catSubPrices[catFilter] || {};
+        return subs.map(subName => {
+          const basePrice = pricesObj[subName] || 200;
+          const adjustedPrice = Math.round((basePrice * locationMultiplier) / 5) * 5;
+          return {
+            name: subName,
+            "متوسط السعر": adjustedPrice,
+            isCurrent: subFilter === subName
+          };
+        });
+      }
+    }
+
+    // Default top-level comparison across categories
+    return defaultProfessions.map(prof => {
+      const adjustedPrice = Math.round((prof.price * locationMultiplier) / 5) * 5;
+      return {
+        name: prof.name,
+        "متوسط السعر": adjustedPrice,
+        isCurrent: false
+      };
+    });
+  }, [catFilter, subFilter, selectedLocation]);
 
   const jobs = jobsList
     .filter(j=>filter==="all"||(filter==="work"&&j.type==="need-worker")||(filter==="job"&&j.type==="need-job"))
     .filter(j=>!catFilter||j.catId===catFilter)
+    .filter(j=>{
+      if (!subFilter) return true;
+      if (j.sub) return j.sub === subFilter;
+      return j.title.includes(subFilter) || j.desc.includes(subFilter);
+    })
     .filter(j=>{
       if (selectedLocation === "all") return true;
       if (selectedLocation === "tanta") {
@@ -553,7 +645,15 @@ const HomeScreen = ({jobsList,t,dark,onJob,onCats,selectedLocation}: HomeScreenP
         <div style={{display:"flex",gap:8,padding:"0 16px",overflowX:"auto",
           scrollbarWidth:"none",direction:"rtl",paddingBottom:6}}>
           {CATS.map(c=>(
-            <button key={c.id} onClick={()=>setCatFilter(catFilter===c.id?null:c.id)}
+            <button key={c.id} onClick={()=>{
+              if (catFilter === c.id) {
+                setCatFilter(null);
+                setSubFilter(null);
+              } else {
+                setCatFilter(c.id);
+                setSubFilter(null);
+              }
+            }}
               style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
                 padding:"10px 10px",minWidth:70,borderRadius:12,
                 border:`1.5px solid ${catFilter===c.id?C.blue:t.border}`,
@@ -569,6 +669,71 @@ const HomeScreen = ({jobsList,t,dark,onJob,onCats,selectedLocation}: HomeScreenP
         </div>
       </div>
 
+      {/* ── ACTIVE CATEGORY SUB-SECTIONS ── */}
+      {catFilter && (
+        <div style={{
+          background: t.card,
+          borderTop: `1.5px solid ${t.border}`,
+          borderBottom: `1.5px solid ${t.border}`,
+          padding: "14px 16px",
+          direction: "rtl",
+          marginTop: 4,
+          marginBottom: 8,
+          animation: "fadeIn 0.2s"
+        }}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:20}}>{CATS.find(c=>c.id===catFilter)?.emoji}</span>
+              <div style={{textAlign:"right"}}>
+                <span style={{color:t.text,fontSize:13,fontWeight:800,display:"block"}}>
+                  تصفح قسم: {CATS.find(c=>c.id===catFilter)?.ar}
+                </span>
+                <span style={{color:t.textMuted,fontSize:10,display:"block",marginTop:1}}>
+                  اختر التخصص الفرعي لتصفية نتائج العمالة
+                </span>
+              </div>
+            </div>
+            <button onClick={()=>{setCatFilter(null);setSubFilter(null);}}
+              style={{
+                background:t.surface,border:`1px solid ${t.border}`,borderRadius:8,
+                padding:"5px 12px",color:C.blue,fontSize:11,fontWeight:700,cursor:"pointer",
+                transition:"all 0.15s"
+              }}>
+              إلغاء التصفية ×
+            </button>
+          </div>
+
+          <div style={{display:"flex",gap:6,overflowX:"auto",scrollbarWidth:"none",paddingBottom:2}}>
+            {/* "All" button */}
+            <button onClick={()=>setSubFilter(null)}
+              style={{
+                padding:"6px 14px",borderRadius:99,flexShrink:0,
+                border:`1.5px solid ${subFilter===null?C.blue:t.border}`,
+                background:subFilter===null?t.blueBg:t.surface,
+                color:subFilter===null?C.blue:t.textSec,
+                fontSize:11,fontWeight:subFilter===null?700:500,cursor:"pointer",
+                transition:"all 0.15s",whiteSpace:"nowrap"
+              }}>
+              الجميع
+            </button>
+            {/* Subcategories list */}
+            {CATS.find(c=>c.id===catFilter)?.subs.map(s=>(
+              <button key={s} onClick={()=>setSubFilter(s)}
+                style={{
+                  padding:"6px 14px",borderRadius:99,flexShrink:0,
+                  border:`1.5px solid ${subFilter===s?C.blue:t.border}`,
+                  background:subFilter===s?t.blueBg:t.surface,
+                  color:subFilter===s?C.blue:t.textSec,
+                  fontSize:11,fontWeight:subFilter===s?700:500,cursor:"pointer",
+                  transition:"all 0.15s",whiteSpace:"nowrap"
+                }}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── FILTER TABS ── */}
       <div style={{display:"flex",gap:6,padding:"10px 16px 8px",overflowX:"auto",
         scrollbarWidth:"none",direction:"rtl"}}>
@@ -583,6 +748,177 @@ const HomeScreen = ({jobsList,t,dark,onJob,onCats,selectedLocation}: HomeScreenP
             {f.l}
           </button>
         ))}
+      </div>
+
+      {/* ── PRICE INDEX CHART ── */}
+      <div style={{
+        padding: "0 12px 10px",
+        direction: "rtl"
+      }}>
+        <div style={{
+          background: t.card,
+          border: `1.5px solid ${t.border}`,
+          borderRadius: 14,
+          padding: "14px 16px",
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          {/* Header */}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            cursor: "pointer"
+          }} onClick={() => setShowPriceGuide(!showPriceGuide)}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 16 }}>📈</span>
+                <span style={{ color: t.text, fontSize: 13, fontWeight: 800 }}>
+                  دليل أسعار الخدمات الاسترشادي
+                </span>
+                <span style={{
+                  background: t.blueBg,
+                  color: C.blue,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  padding: "2px 6px",
+                  borderRadius: 6
+                }}>
+                  {locationArName}
+                </span>
+              </div>
+              <p style={{ color: t.textMuted, fontSize: 10, margin: "3px 0 0", textAlign: "right" }}>
+                معدل أسعار مهنة <strong style={{ color: C.blue, fontWeight: 800 }}>{currentProfessionName}</strong> (جنيه مصري / باليومية أو بالعملية)
+              </p>
+            </div>
+            <button style={{
+              background: "none",
+              border: "none",
+              color: C.blue,
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 2
+            }}>
+              {showPriceGuide ? "إخفاء ▲" : "عرض التفاصيل ▼"}
+            </button>
+          </div>
+
+          {showPriceGuide && (
+            <div style={{ marginTop: 14, animation: "fadeIn 0.25s" }}>
+              {/* Interactive Info tip */}
+              <div style={{
+                background: t.surface,
+                borderRadius: 8,
+                padding: "8px 10px",
+                fontSize: 10,
+                color: t.textSec,
+                marginBottom: 12,
+                textAlign: "right",
+                lineHeight: 1.4,
+                borderRight: `3px solid ${C.blue}`
+              }}>
+                ℹ️ الأسعار المعروضة استرشادية لمساعدتك في التقديم أو طلب المحترفين. اضغط على أي تخصص لتنشيط التصفية مباشرة!
+              </div>
+
+              {/* Chart container */}
+              <div style={{ width: "100%", height: 140, direction: "ltr" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={priceChartData} 
+                    margin={{ top: 8, right: 5, left: -25, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"} vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: t.textMuted, fontSize: 8, fontWeight: 600 }}
+                    />
+                    <YAxis 
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: t.textMuted, fontSize: 8 }}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          const isHighlighted = catFilter 
+                            ? subFilter === data.name 
+                            : catFilter === CATS.find(c => c.ar === data.name)?.id;
+                          return (
+                            <div style={{
+                              background: t.surface,
+                              border: `1.5px solid ${isHighlighted ? C.blue : t.border}`,
+                              borderRadius: 8,
+                              padding: "6px 8px",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                              direction: "rtl",
+                              textAlign: "right"
+                            }}>
+                              <div style={{ color: t.text, fontSize: 10, fontWeight: 800 }}>{data.name}</div>
+                              <div style={{ color: C.blue, fontSize: 10, fontWeight: 700, marginTop: 2 }}>
+                                💰 متوسط التكلفة: {data["متوسط السعر"]} ج.م
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar 
+                      dataKey="متوسط السعر" 
+                      radius={[4, 4, 0, 0]} 
+                      maxBarSize={30} 
+                      style={{ cursor: "pointer" }}
+                      onClick={(data: any) => {
+                        if (data && data.name) {
+                          if (catFilter) {
+                            setSubFilter(subFilter === data.name ? null : data.name);
+                          } else {
+                            const foundCat = CATS.find(c => c.ar === data.name);
+                            if (foundCat) {
+                              setCatFilter(foundCat.id);
+                            }
+                          }
+                        }
+                      }}
+                    >
+                      {priceChartData.map((entry, index) => {
+                        const isHighlightSub = subFilter !== null;
+                        const isSelectedBar = catFilter 
+                          ? subFilter === entry.name 
+                          : catFilter === CATS.find(c => c.ar === entry.name)?.id;
+                        
+                        let barColor = C.blue;
+                        if (catFilter) {
+                          if (isHighlightSub) {
+                            barColor = isSelectedBar ? C.blue : (dark ? "rgba(255,255,255,0.1)" : "#E4E7EB");
+                          } else {
+                            barColor = C.blue;
+                          }
+                        } else {
+                          barColor = C.blue;
+                        }
+
+                        return (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={barColor} 
+                          />
+                        );
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── LISTINGS ── */}
@@ -604,10 +940,31 @@ const HomeScreen = ({jobsList,t,dark,onJob,onCats,selectedLocation}: HomeScreenP
 ═══════════════════════════════════════════ */
 interface CategoriesScreenProps {
   t: ThemeType;
+  catFilter: string | null;
+  setCatFilter: (v: string | null) => void;
+  subFilter: string | null;
+  setSubFilter: (v: string | null) => void;
+  setTab: (v: string) => void;
 }
 
-const CategoriesScreen = ({t}: CategoriesScreenProps)=>{
+const CategoriesScreen = ({
+  t,
+  catFilter,
+  setCatFilter,
+  subFilter,
+  setSubFilter,
+  setTab
+}: CategoriesScreenProps)=>{
   const [exp,setExp]=useState<string | null>(null);
+  const [searchQuery,setSearchQuery]=useState("");
+
+  const filteredCats = CATS.filter(cat => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return cat.ar.toLowerCase().includes(q) || 
+           cat.subs.some(sub => sub.toLowerCase().includes(q));
+  });
+
   return (
     <div style={{paddingBottom:100}}>
       {/* Search inside categories */}
@@ -615,17 +972,22 @@ const CategoriesScreen = ({t}: CategoriesScreenProps)=>{
         <div style={{display:"flex",alignItems:"center",gap:8,background:t.card,
           border:`1px solid ${t.border}`,borderRadius:10,padding:"9px 13px",direction:"rtl"}}>
           <Svg d={ic.search} s={16} c={t.textMuted}/>
-          <input placeholder="ابحث في الفئات..." style={{flex:1,background:"none",border:"none",
-            color:t.text,fontSize:13,outline:"none",fontFamily:"inherit",direction:"rtl"}}/>
+          <input
+            value={searchQuery}
+            onChange={(e)=>setSearchQuery(e.target.value)}
+            placeholder="ابحث في الفئات والتخصصات..."
+            style={{flex:1,background:"none",border:"none",
+              color:t.text,fontSize:13,outline:"none",fontFamily:"inherit",direction:"rtl"}}
+          />
         </div>
       </div>
 
       <div style={{padding:"6px 12px"}}>
         <div style={{color:t.textMuted,fontSize:11,direction:"rtl",marginBottom:10,paddingRight:4}}>
-          {CATS.reduce((a,c)=>a+c.count,0).toLocaleString()} إعلان في {CATS.length} فئة رئيسية
+          {filteredCats.reduce((a,c)=>a+c.count,0).toLocaleString()} إعلان في {filteredCats.length} فئة رئيسية
         </div>
 
-        {CATS.map(cat=>(
+        {filteredCats.map(cat=>(
           <div key={cat.id} style={{background:t.card,border:`1px solid ${t.border}`,
             borderRadius:12,marginBottom:8,overflow:"hidden"}}>
             <button onClick={()=>setExp(exp===cat.id?null:cat.id)}
@@ -648,15 +1010,38 @@ const CategoriesScreen = ({t}: CategoriesScreenProps)=>{
             </button>
 
             {exp===cat.id&&(
-              <div style={{borderTop:`1px solid ${t.border}`,padding:"10px 14px 14px",direction:"rtl"}}>
+              <div style={{borderTop:`1px solid ${t.border}`,padding:"12px 14px",background:t.surface,direction:"rtl"}}>
+                {/* Enter primary section option */}
+                <div style={{marginBottom:10}}>
+                  <button onClick={()=>{
+                    setCatFilter(cat.id);
+                    setSubFilter(null);
+                    setTab("home");
+                  }} style={{
+                    width:"100%",background:C.blue,border:"none",color:"#fff",
+                    borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:700,
+                    cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4,
+                    transition:"all 0.15s"
+                  }}>
+                    <span>👈 دخول قسم {cat.ar} (الجميع)</span>
+                  </button>
+                </div>
+
+                <div style={{color:t.textMuted,fontSize:10,fontWeight:700,marginBottom:8}}>التخصصات الفرعية:</div>
+
                 <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
                   {cat.subs.map(s=>(
-                    <button key={s} style={{padding:"6px 13px",borderRadius:99,
-                      border:`1px solid ${t.border}`,background:t.surface,
-                      color:t.textSec,fontSize:11,cursor:"pointer",fontWeight:500,
-                      transition:"all 0.15s"}}
+                    <button key={s} onClick={()=>{
+                      setCatFilter(cat.id);
+                      setSubFilter(s);
+                      setTab("home");
+                    }}
+                      style={{padding:"6px 13px",borderRadius:99,
+                        border:`1px solid ${t.border}`,background:t.card,
+                        color:t.textSec,fontSize:11,cursor:"pointer",fontWeight:500,
+                        transition:"all 0.15s"}}
                       onMouseEnter={e=>{e.currentTarget.style.borderColor=C.blue;e.currentTarget.style.color=C.blue;e.currentTarget.style.background=t.blueBg;}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=t.border;e.currentTarget.style.color=t.textSec;e.currentTarget.style.background=t.surface;}}>
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=t.border;e.currentTarget.style.color=t.textSec;e.currentTarget.style.background=t.card;}}>
                       {s}
                     </button>
                   ))}
@@ -675,9 +1060,11 @@ const CategoriesScreen = ({t}: CategoriesScreenProps)=>{
 ═══════════════════════════════════════════ */
 interface PostScreenProps {
   t: ThemeType;
+  onAddJob: (job: Job) => void;
+  profile: any;
 }
 
-const PostScreen = ({t}: PostScreenProps)=>{
+const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
   const [mode,setMode]=useState("need-worker");
   const [cat,setCat]=useState<string | null>(null);
   const [title,setTitle]=useState("");
@@ -689,6 +1076,37 @@ const PostScreen = ({t}: PostScreenProps)=>{
   const [nego,setNego]=useState(false);
   const [contact,setContact]=useState("both");
   const [done,setDone]=useState(false);
+
+  const handlePublish = () => {
+    if(!valid) return;
+    
+    const newJobId = Date.now();
+
+    const newJob: Job = {
+      id: newJobId,
+      type: mode,
+      title: title,
+      catId: cat || "all",
+      sub: "عام",
+      loc: loc || "طنطا",
+      price: parseInt(price) || 0,
+      unit: unit === "ثابت" ? "سعر ثابت" : (unit === "ساعة" ? "ساعة" : "يوم"),
+      urgent: urgent,
+      age: "الآن",
+      views: 1,
+      apps: 0,
+      poster: profile.avatarColor || C.blue,
+      pName: profile.name,
+      verified: profile.verified,
+      stars: profile.rating,
+      desc: desc || "لا يوجد وصف تفصيلي لهذا الإعلان.",
+      ratingCount: 1,
+      ratingsList: [5],
+    };
+
+    onAddJob(newJob);
+    setDone(true);
+  };
 
   const inp = (extra: React.CSSProperties = {}): React.CSSProperties => ({
     width:"100%",background:t.card,border:`1px solid ${t.border}`,
@@ -867,7 +1285,7 @@ const PostScreen = ({t}: PostScreenProps)=>{
         </div>
       </div>
 
-      <button onClick={()=>valid&&setDone(true)}
+      <button onClick={()=>valid&&handlePublish()}
         style={{width:"100%",
           background:valid?C.blue:t.card,
           border:`1px solid ${valid?C.blue:t.border}`,
@@ -1096,13 +1514,67 @@ interface JobDetailProps {
   onBack: () => void;
   onChat: () => void;
   onRate: (rating: number) => void;
+  likedJobIds: number[];
+  setLikedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
+  appliedJobIds: number[];
+  setAppliedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
 }
 
-const JobDetail=({job,t,dark,onBack,onChat,onRate}: JobDetailProps)=>{
-  const [liked,setLiked]=useState(false);
-  const [applied,setApplied]=useState(false);
+const JobDetail=({
+  job,
+  t,
+  dark,
+  onBack,
+  onChat,
+  onRate,
+  likedJobIds,
+  setLikedJobIds,
+  appliedJobIds,
+  setAppliedJobIds
+}: JobDetailProps)=>{
+  const liked = likedJobIds.includes(job.id);
+  const applied = appliedJobIds.includes(job.id);
+  const [showToast, setShowToast] = useState(false);
+  const toastTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleApplyToggle = () => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
+    if (!applied) {
+      setAppliedJobIds(prev => [...prev, job.id]);
+      setShowToast(true);
+      toastTimeoutRef.current = window.setTimeout(() => {
+        setShowToast(false);
+      }, 4000);
+    } else {
+      setAppliedJobIds(prev => prev.filter(id => id !== job.id));
+      setShowToast(false);
+    }
+  };
+
   const cat=CATS.find(c=>c.id===job.catId);
   const isWork=job.type==="need-worker";
+
+  // Generate deterministic phone number and WhatsApp url
+  const cleanPhone = React.useMemo(() => {
+    const numericSuffix = (10000000 + (job.id * 7359) % 90000000).toString(); // 8 digits
+    return `201${(job.id % 3) === 0 ? "0" : ((job.id % 3) === 1 ? "1" : "2")}${numericSuffix}`;
+  }, [job.id]);
+
+  const whatsappUrl = React.useMemo(() => {
+    const whatsappText = `مرحباً ${job.pName}، أنا مهتم بخصوص إعلانك: "${job.title}" على منصة أرزاق.`;
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappText)}`;
+  }, [cleanPhone, job.pName, job.title]);
 
   const [ratingVal, setRatingVal] = useState(0);
   const [hoverVal, setHoverVal] = useState(0);
@@ -1117,7 +1589,13 @@ const JobDetail=({job,t,dark,onBack,onChat,onRate}: JobDetailProps)=>{
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
         padding:"10px 14px",background:t.surface,borderBottom:`1px solid ${t.border}`,
         position:"sticky",top:0,zIndex:40}}>
-        <button onClick={()=>setLiked(!liked)}
+        <button onClick={() => {
+          if (liked) {
+            setLikedJobIds(prev => prev.filter(id => id !== job.id));
+          } else {
+            setLikedJobIds(prev => [...prev, job.id]);
+          }
+        }}
           style={{width:36,height:36,borderRadius:9,background:t.card,
             border:`1px solid ${t.border}`,cursor:"pointer",
             display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -1523,24 +2001,134 @@ const JobDetail=({job,t,dark,onBack,onChat,onRate}: JobDetailProps)=>{
         </div>
       </div>
 
+      {/* ── TOAST ALERT FOR SUCCESSFUL APPLICATION ── */}
+      {showToast && (
+        <div className="animate-slideDown" style={{
+          position: "fixed",
+          top: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#10B981", // Emerald Green
+          color: "#ffffff",
+          boxShadow: "0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.4)",
+          padding: "12px 16px",
+          borderRadius: 12,
+          zIndex: 9999,
+          width: "calc(100% - 32px)",
+          maxWidth: 440,
+          direction: "rtl",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          border: "1px solid rgba(255,255,255,0.2)"
+        }}>
+          <div style={{
+            background: "rgba(255,255,255,0.2)",
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0
+          }}>
+            <Svg d={ic.check} s={15} c="#fff" sw={3} />
+          </div>
+          <div style={{ flex: 1, textAlign: "right" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.4 }}>تم التقديم بنجاح!</div>
+            <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.9, marginTop: 1 }}>تم إرسال طلبك بنجاح لصاحب العمل.</div>
+          </div>
+          <button onClick={() => setShowToast(false)} style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "#fff",
+            opacity: 0.7,
+            fontSize: 16,
+            padding: 4,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <span>×</span>
+          </button>
+        </div>
+      )}
+
       {/* CTA bottom bar */}
       <div style={{position:"fixed",bottom:0,left:0,right:0,maxWidth:480,
         margin:"0 auto",padding:"10px 12px 14px",
         background:t.surface,borderTop:`1px solid ${t.border}`,
-        display:"flex",gap:9,zIndex:100}}>
-        <button style={{flex:1,background:t.card,border:`1px solid ${t.borderMed}`,
-          color:t.text,borderRadius:10,padding:"12px",fontSize:13,fontWeight:600,
-          cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-          <Svg d={ic.phone} s={15} c={t.text}/> اتصال
-        </button>
-        <button onClick={()=>setApplied(!applied)}
-          style={{flex:2,background:applied?C.green:C.blue,border:"none",
-            color:"#fff",borderRadius:10,padding:"12px",fontSize:13,fontWeight:700,
-            cursor:"pointer",display:"flex",alignItems:"center",
-            justifyContent:"center",gap:6,transition:"background 0.2s",
-            boxShadow:`0 3px 10px ${applied?C.green:C.blue}44`}}>
-          <Svg d={applied?ic.check:ic.chat} s={15} c="#fff"/>
-          {applied?"تم التقديم ✓":"تقدم للوظيفة"}
+        display:"flex",gap:8,zIndex:100}}>
+        
+        {/* Call Button */}
+        <a href={`tel:${cleanPhone}`} style={{
+          flex: 1,
+          background: t.card,
+          border: `1px solid ${t.borderMed}`,
+          color: t.text,
+          borderRadius: 10,
+          padding: "12px 6px",
+          fontSize: 12,
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 4,
+          textDecoration: "none",
+          textAlign: "center"
+        }}>
+          <Svg d={ic.phone} s={14} c={t.text}/>
+          <span>اتصال</span>
+        </a>
+
+        {/* WhatsApp Button */}
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{
+          flex: 1.2,
+          background: "#25D366",
+          border: "none",
+          color: "#fff",
+          borderRadius: 10,
+          padding: "12px 6px",
+          fontSize: 12,
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          textDecoration: "none",
+          textAlign: "center",
+          boxShadow: "0 3px 10px rgba(37, 211, 102, 0.3)"
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0, color: "#fff" }}>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.71 1.456h.006c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/>
+          </svg>
+          <span>واتساب</span>
+        </a>
+
+        {/* Apply Button */}
+        <button onClick={handleApplyToggle}
+          style={{
+            flex: 1.5,
+            background: applied?C.green:C.blue,
+            border: "none",
+            color: "#fff",
+            borderRadius: 10,
+            padding: "12px 6px",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            transition: "background 0.2s",
+            boxShadow: `0 3px 10px ${applied?C.green:C.blue}44`
+          }}>
+          <Svg d={applied?ic.check:ic.chat} s={14} c="#fff"/>
+          <span>{applied?"تم التقديم ✓":"تقدم للوظيفة"}</span>
         </button>
       </div>
     </div>
@@ -1554,19 +2142,1111 @@ interface ProfileScreenProps {
   t: ThemeType;
   dark: boolean;
   toggle: () => void;
+  profile: any;
+  setProfile: React.Dispatch<React.SetStateAction<any>>;
+  likedJobIds: number[];
+  setLikedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
+  appliedJobIds: number[];
+  setAppliedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
+  jobsList: Job[];
+  setJobsList: React.Dispatch<React.SetStateAction<Job[]>>;
+  onViewJob: (job: Job) => void;
+  walletTransactions: any[];
+  setWalletTransactions: React.Dispatch<React.SetStateAction<any[]>>;
+  privacySettings: any;
+  setPrivacySettings: React.Dispatch<React.SetStateAction<any>>;
+  notifSettings: any;
+  setNotifSettings: React.Dispatch<React.SetStateAction<any>>;
+  isLoggedOut: boolean;
+  setIsLoggedOut: (value: boolean) => void;
 }
 
-const ProfileScreen=({t,dark,toggle}: ProfileScreenProps)=>{
+const ProfileScreen=({
+  t,
+  dark,
+  toggle,
+  profile,
+  setProfile,
+  likedJobIds,
+  setLikedJobIds,
+  appliedJobIds,
+  setAppliedJobIds,
+  jobsList,
+  setJobsList,
+  onViewJob,
+  walletTransactions,
+  setWalletTransactions,
+  privacySettings,
+  setPrivacySettings,
+  notifSettings,
+  setNotifSettings,
+  isLoggedOut,
+  setIsLoggedOut
+}: ProfileScreenProps)=>{
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Stats
+  const myAds = jobsList.filter(j => j.pName === profile.name || j.pName === "أبو ميرا");
+  const favorites = jobsList.filter(j => likedJobIds.includes(j.id));
+  const myApplications = jobsList.filter(j => appliedJobIds.includes(j.id));
+
+  // State trackers for sub-views
+  // Wallet
+  const [depositAmt, setDepositAmt] = useState("");
+  const [depositMethod, setDepositMethod] = useState("vodafone");
+  const [showDepositForm, setShowDepositForm] = useState(false);
+  const [withdrawAmt, setWithdrawAmt] = useState("");
+  const [withdrawMethod, setWithdrawMethod] = useState("vodafone");
+  const [showWithdrawForm, setShowWithdrawForm] = useState(false);
+  const [walletError, setWalletError] = useState("");
+  const [walletSuccess, setWalletSuccess] = useState("");
+
+  // Edit Profile Form
+  const [editName, setEditName] = useState(profile.name);
+  const [editPhone, setEditPhone] = useState(profile.phone);
+  const [editCity, setEditCity] = useState(profile.city);
+  const [editBio, setEditBio] = useState(profile.bio);
+  const [editExp, setEditExp] = useState(profile.experience || "8 سنوات");
+  const [editSkills, setEditSkills] = useState<string[]>(profile.skills);
+  const [editSuccess, setEditSuccess] = useState(false);
+
+  // Privacy & Security Form
+  const [oldPin, setOldPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [pinSuccess, setPinSuccess] = useState(false);
+
+  // Notifications alerts
+  const [localNotifs, setLocalNotifs] = useState([
+    { id: 1, text: `💸 تم شحن المحفظة بنجاح بمبلغ 200 ج.م`, date: "منذ ساعتين", icon: "✨" },
+    { id: 2, text: `⭐ حصلت على تقييم 5 نجوم من أحمد الحريري للإصلاح المتميز`, date: "منذ يوم", icon: "🌟" },
+    { id: 3, text: `📢 حصل إعلانك "سباك شاطر" على 12 مشاهدة جديدة هذا الأسبوع`, date: "منذ يومين", icon: "📈" },
+    { id: 4, text: `🛡️ تم تدوين حماية الحساب بنجاح عبر الرقم المؤكد`, date: "منذ 4 أيام", icon: "🔒" },
+  ]);
+
+  const [activeRatingTab, setActiveRatingTab] = useState<"client" | "worker">("client");
+
+  // Suspended ads tracker
+  const [suspendedAds, setSuspendedAds] = useState<number[]>([]);
+
+  const handleToggleSuspend = (jobId: number) => {
+    if (suspendedAds.includes(jobId)) {
+      setSuspendedAds(prev => prev.filter(id => id !== jobId));
+    } else {
+      setSuspendedAds(prev => [...prev, jobId]);
+    }
+  };
+
+  const handleDeleteAd = (jobId: number) => {
+    if (confirm("هل أنت متأكد من رغبتك في حذف هذا الإعلان نهائياً؟")) {
+      setJobsList(prev => prev.filter(j => j.id !== jobId));
+    }
+  };
+
+  const handleSaveProfile = () => {
+    setProfile({
+      ...profile,
+      name: editName,
+      phone: editPhone,
+      city: editCity,
+      locationDetail: `${editCity}، مصر`,
+      bio: editBio,
+      skills: editSkills,
+      experience: editExp
+    });
+    setEditSuccess(true);
+    setTimeout(() => setEditSuccess(false), 3000);
+  };
+
+  const handleToggleSkill = (skill: string) => {
+    if (editSkills.includes(skill)) {
+      setEditSkills(prev => prev.filter(s => s !== skill));
+    } else {
+      setEditSkills(prev => [...prev, skill]);
+    }
+  };
+
+  const ALL_SKILLS = ["تنظيف", "سباكة", "كهرباء", "دهانات", "نجارة", "تكييف", "حراسة مباني", "تنسيق حدائق", "نقل أثاث"];
+
+  const handleAddDeposit = () => {
+    const amt = parseFloat(depositAmt);
+    if (isNaN(amt) || amt <= 0) {
+      setWalletError("الرجاء إدخال مبلغ صحيح لشحن الرصيد.");
+      return;
+    }
+    const methodNames: Record<string, string> = {
+      vodafone: "فودافون كاش",
+      instapay: "إنستا باي",
+      credit: "بطاقة ائتمانية / ميزة"
+    };
+    setProfile((prev: any) => ({ ...prev, walletBalance: prev.walletBalance + amt }));
+    setWalletTransactions((prev: any[]) => [
+      {
+        id: Date.now(),
+        title: `شحن رصيد عبر ${methodNames[depositMethod] || "المحفظة"}`,
+        amount: amt,
+        type: "deposit",
+        date: "الآن"
+      },
+      ...prev
+    ]);
+    setDepositAmt("");
+    setShowDepositForm(false);
+    setWalletError("");
+    setWalletSuccess("تم شحن الرصيد بنجاح! الرصيد الجديد متاح الآن وموثق.");
+    setTimeout(() => setWalletSuccess(""), 4000);
+  };
+
+  const handleWithdraw = () => {
+    const amt = parseFloat(withdrawAmt);
+    if (isNaN(amt) || amt <= 0) {
+      setWalletError("الرجاء إدخال مبلغ سحب صحيح.");
+      return;
+    }
+    if (amt > profile.walletBalance) {
+      setWalletError("رصيدك الحالي غير كافٍ لإتمام هذه المعاملة.");
+      return;
+    }
+    const methodNames: Record<string, string> = {
+      vodafone: "فودافون كاش",
+      instapay: "إنستا باي",
+      credit: "حساب بنكي / ميزة"
+    };
+    setProfile((prev: any) => ({ ...prev, walletBalance: prev.walletBalance - amt }));
+    setWalletTransactions((prev: any[]) => [
+      {
+        id: Date.now(),
+        title: `طلب سحب رصيد إلى ${methodNames[withdrawMethod] || "المحفظة"}`,
+        amount: -amt,
+        type: "charge",
+        date: "الآن"
+      },
+      ...prev
+    ]);
+    setWithdrawAmt("");
+    setShowWithdrawForm(false);
+    setWalletError("");
+    setWalletSuccess("تم تسجيل طلب السحب بنجاح! يستغرق المعالجة عادة 15 دقيقة.");
+    setTimeout(() => setWalletSuccess(""), 4000);
+  };
+
+  const handleUpdatePin = () => {
+    if (!oldPin || !newPin) {
+      alert("يرجى ملء الرمز القديم والجديد.");
+      return;
+    }
+    setPinSuccess(true);
+    setOldPin("");
+    setNewPin("");
+    setTimeout(() => setPinSuccess(false), 3500);
+  };
+
   const menu=[
-    {i:ic.list,  l:"إعلاناتي",       s:"4 إعلانات نشطة",      badge:"4"},
-    {i:ic.heart, l:"المفضلة",         s:"12 عنصر محفوظ"},
-    {i:ic.bag,   l:"الطلبات",         s:"سجل مشترياتك وطلباتك"},
-    {i:ic.star,  l:"التقييمات",       s:"متوسط تقييمك ★ 4.8"},
-    {i:ic.wallet,l:"المحفظة",         s:"الرصيد: 0.00 ج.م"},
-    {i:ic.edit,  l:"تعديل الملف",     s:"بياناتك ومعلومات التواصل"},
-    {i:ic.shield,l:"الخصوصية والأمان",s:"كلمة المرور والتحقق"},
-    {i:ic.bell,  l:"الإشعارات",       s:"إدارة التنبيهات"},
+    {i:ic.list,  l:"إعلاناتي",       s:`${myAds.length} إعلانات منشورة`,      badge: myAds.length > 0 ? myAds.length.toString() : undefined, id: "my-ads"},
+    {i:ic.heart, l:"المفضلة",         s:`${favorites.length} عناصر محفوظة`,     badge: favorites.length > 0 ? favorites.length.toString() : undefined, id: "favorites"},
+    {i:ic.bag,   l:"الطلبات",         s:`${myApplications.length} طلبات تقدمت لها`, badge: myApplications.length > 0 ? myApplications.length.toString() : undefined, id: "orders"},
+    {i:ic.star,  l:"التقييمات",       s:`متوسط تقييمك ★ ${profile.rating}`, id: "ratings"},
+    {i:ic.wallet,l:"المحفظة",         s:`الرصيد: ${profile.walletBalance.toFixed(2)} ج.م`, id: "wallet"},
+    {i:ic.edit,  l:"تعديل الملف",     s:"البيانات الشخصية والمهارات", id: "edit-profile"},
+    {i:ic.shield,l:"الخصوصية والأمان",s:"تحديث الرمز السري وحالة الظهور", id: "privacy"},
+    {i:ic.bell,  l:"الإشعارات",       s:"تفضيلات الإرسال ومراجعة التنبيهات", badge: localNotifs.length > 0 ? localNotifs.length.toString() : undefined, id: "notifications"},
   ];
+
+  const chartData = React.useMemo(() => {
+    const data = [];
+    const adDays = [2, 10, 18, 27]; 
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(2026, 4, 23); 
+      d.setDate(d.getDate() - i);
+      const isAdDay = adDays.includes(29 - i);
+      const adsCount = isAdDay ? 1 : 0;
+      
+      let viewsCount = 2; 
+      if (29 - i >= 2 && 29 - i < 10) {
+        viewsCount = Math.round(15 * Math.exp(-(29 - i - 2) * 0.15)) + 3;
+      } else if (29 - i >= 10 && 29 - i < 18) {
+        viewsCount = Math.round(22 * Math.exp(-(29 - i - 10) * 0.2)) + 4;
+      } else if (29 - i >= 18 && 29 - i < 27) {
+        viewsCount = Math.round(18 * Math.exp(-(29 - i - 18) * 0.18)) + 3;
+      } else if (29 - i >= 27) {
+        viewsCount = Math.round(35 * Math.exp(-(29 - i - 27) * 0.1)) + 5;
+      }
+      
+      viewsCount = Math.max(1, viewsCount + Math.floor(Math.sin((29 - i) * 1.5) * 3));
+
+      const monthsAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+      const fullDateStr = `${d.getDate()} ${monthsAr[d.getMonth()]} ${d.getFullYear()}`;
+
+      data.push({
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        fullDate: fullDateStr,
+        "الإعلانات": adsCount,
+        "المشاهدات": viewsCount
+      });
+    }
+    return data;
+  }, []);
+
+  // Back to profile list helper
+  const renderHeader = (title: string) => (
+    <div style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: "13px 14px",
+      background: t.surface,
+      borderBottom: `1px solid ${t.border}`,
+      direction: "rtl"
+    }}>
+      <h3 style={{ color: t.text, fontSize: 15, fontWeight: 800, margin: 0 }}>{title}</h3>
+      <button onClick={() => { setActiveSection(null); setWalletError(""); setWalletSuccess(""); }}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          background: t.card,
+          border: `1px solid ${t.border}`,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+        <Svg d={ic.chevR} s={16} c={t.text} />
+      </button>
+    </div>
+  );
+
+  // If we are in a sub-section modal / overlay
+  if (activeSection) {
+    return (
+      <div style={{ paddingBottom: 110, animation: "fadeIn 0.2s", minHeight: "100%" }}>
+        {activeSection === "my-ads" && (
+          <div>
+            {renderHeader("إعلاناتي المنشورة")}
+            <div style={{ padding: 14, direction: "rtl" }}>
+              {myAds.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 10px", color: t.textMuted }}>
+                  <span style={{ fontSize: 40 }}>📢</span>
+                  <p style={{ fontSize: 13, fontWeight: 700, marginTop: 12 }}>لا توجد لديك إعلانات بعد!</p>
+                  <p style={{ fontSize: 11, maxWidth: 260, margin: "6px auto 0", lineHeight: 1.5 }}>
+                    يمكنك نشر إعلان لطلب العمالة أو عرض خدماتك المهنية بضغطة زر (+) في الأسفل.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 11, color: t.textMuted, margin: "0 0 6px" }}>ادمج، عدل، أو عطل إعلاناتك المعروضة في التطبيق لتعديل رغباتك:</p>
+                  {myAds.map(ad => {
+                    const isSuspended = suspendedAds.includes(ad.id);
+                    return (
+                      <div key={ad.id} style={{
+                        background: t.card,
+                        border: `1.5px solid ${isSuspended ? t.border : C.blue}33`,
+                        borderRadius: 12,
+                        padding: 12,
+                        opacity: isSuspended ? 0.65 : 1,
+                        transition: "all 0.15s"
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                          <span style={{
+                            background: isSuspended ? t.border : C.blue + "15",
+                            color: isSuspended ? t.textMuted : C.blue,
+                            fontSize: 9,
+                            fontWeight: 800,
+                            padding: "2px 6px",
+                            borderRadius: 6
+                          }}>
+                            {isSuspended ? "موقوف مؤقتاً" : "نشط"}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: C.green }}>{ad.price} ج.م {ad.unit}</span>
+                        </div>
+                        <h4 style={{ color: t.text, fontSize: 13, fontWeight: 700, margin: "6px 0 10px", textAlign: "right" }}>{ad.title}</h4>
+                        <div style={{ display: "flex", gap: 15, fontSize: 10, color: t.textMuted, borderBottom: `1px solid ${t.border}`, paddingBottom: 10, marginBottom: 10, justifyContent: "flex-start" }}>
+                          <span>👁️ {ad.views} مشاهدة</span>
+                          <span>📩 {ad.apps} تطبيق</span>
+                          <span>📍 {ad.loc}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                          <button onClick={() => onViewJob(ad)}
+                            style={{
+                              background: t.blueBg, color: C.blue, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer"
+                            }}>عرض</button>
+                          <button onClick={() => handleToggleSuspend(ad.id)}
+                            style={{
+                              background: t.surface, color: t.textSec, border: `1px solid ${t.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer"
+                            }}>{isSuspended ? "تفعيل" : "إيقاف مؤقت"}</button>
+                          <button onClick={() => handleDeleteAd(ad.id)}
+                            style={{
+                              background: t.redBg, color: C.red, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer"
+                            }}>حذف 🗑️</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "favorites" && (
+          <div>
+            {renderHeader("المفضلة وعناصر المتابعة")}
+            <div style={{ padding: 14, direction: "rtl" }}>
+              {favorites.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 10px", color: t.textMuted }}>
+                  <div style={{ fontSize: 44 }}>❤️</div>
+                  <p style={{ fontSize: 13, fontWeight: 700, marginTop: 12 }}>المفضلة فارغة حالياً</p>
+                  <p style={{ fontSize: 11, maxWidth: 260, margin: "6px auto 0", lineHeight: 1.5 }}>
+                    عند تصفحك للرئيسية، اضغط على زر القلب في زاوية أي إعلان لحفظه هنا والعودة إليه لاحقاً.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 11, color: t.textMuted, marginBottom: 6 }}>الوظائف والمهنيين الذين قمت بحفظهم للوصول السريع:</p>
+                  {favorites.map(item => (
+                    <div key={item.id} style={{
+                      background: t.card,
+                      border: `1.5px solid ${t.border}`,
+                      borderRadius: 12,
+                      padding: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      direction: "rtl"
+                    }}>
+                      <div style={{ flex: 1, textAlign: "right" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 10, color: t.textMuted }}>{item.loc}</span>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: C.blue }}>{item.price} ج.م</span>
+                        </div>
+                        <h4 onClick={() => onViewJob(item)}
+                          style={{ color: t.text, fontSize: 13, fontWeight: 700, margin: "4px 0", cursor: "pointer" }}>
+                          {item.title}
+                        </h4>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                          <span style={{ fontSize: 10, color: t.textHint }}>نشر: {item.age}</span>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => onViewJob(item)}
+                              style={{ background: t.blueBg, color: C.blue, border: "none", padding: "4px 10px", fontSize: 10, fontWeight: 700, borderRadius: 6, cursor: "pointer" }}>
+                              اتصال
+                            </button>
+                            <button onClick={() => setLikedJobIds(prev => prev.filter(id => id !== item.id))}
+                              style={{ background: t.redBg, color: C.red, border: "none", padding: "4px 8px", fontSize: 10, borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center" }}>
+                              إزالة 🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "orders" && (
+          <div>
+            {renderHeader("طلبات العمل وعروض التقديم")}
+            <div style={{ padding: 14, direction: "rtl" }}>
+              {myApplications.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 10px", color: t.textMuted }}>
+                  <span style={{ fontSize: 44 }}>💼</span>
+                  <p style={{ fontSize: 13, fontWeight: 700, marginTop: 12 }}>لم تتقدم بطلبات بعد</p>
+                  <p style={{ fontSize: 11, maxWidth: 260, margin: "6px auto 0", lineHeight: 1.5 }}>
+                    تصح إعلانات توظيف العمالة في طنطا وكل المحافظات، وانقر على زر "تقدم للوظيفة" لتتبع المراجعات هنا فورياً.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 11, color: t.textMuted, marginBottom: 6 }}>تتبع حالة طلباتك وعروض التوظيف التي أرسلتها لأصحاب الأعمال:</p>
+                  {myApplications.map(app => (
+                    <div key={app.id} style={{
+                      background: t.card,
+                      border: `1px solid ${t.border}`,
+                      borderRadius: 12,
+                      padding: 12
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <span style={{
+                          background: C.orange + "15",
+                          color: C.orange,
+                          fontSize: 10,
+                          fontWeight: 800,
+                          padding: "2px 8px",
+                          borderRadius: 6
+                        }}>
+                          ⏳ قيد المراجعة الفنية
+                        </span>
+                        <span style={{ fontSize: 10, color: t.textMuted }}>مقدم إلى: {app.pName}</span>
+                      </div>
+                      <h4 style={{ color: t.text, fontSize: 13, fontWeight: 700, margin: "4px 0 10px", textAlign: "right" }}>{app.title}</h4>
+                      
+                      {/* Interactive Step Progress */}
+                      <div style={{ background: t.surface, borderRadius: 8, padding: 8, margin: "6px 0 12px", fontSize: 10, color: t.textSec, borderRight: `3px solid ${C.blue}` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, color: C.green, fontWeight: 700 }}>
+                          ✓ الخطوة ١: تم إرسال ملفك وسيرتك وصورتك للعميل
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, color: C.orange, fontWeight: 700 }}>
+                          ⏳ الخطوة ٢: بانتظار قراءة العروض ومطابقة الرقم الهاتفي
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                        <button onClick={() => onViewJob(app)}
+                          style={{ background: t.blueBg, color: C.blue, border: "none", padding: "6px 12px", fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: "pointer" }}>
+                          تفاصيل الإعلان
+                        </button>
+                        <button onClick={() => setAppliedJobIds(prev => prev.filter(id => id !== app.id))}
+                          style={{ background: t.redBg, color: C.red, border: "none", padding: "6px 12px", fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: "pointer" }}>
+                          سحب الطلبي الغاء التقديم
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "ratings" && (
+          <div>
+            {renderHeader("التقييمات وآراء العملاء")}
+            <div style={{ padding: 14, direction: "rtl", textAlign: "right" }}>
+              {/* Stars Overview Box */}
+              <div style={{
+                background: t.card,
+                border: `1.5px solid ${t.border}`,
+                borderRadius: 14,
+                padding: 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 20,
+                marginBottom: 14
+              }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 32, fontWeight: 950, color: t.text }}>4.8</div>
+                  <div style={{ display: "flex", gap: 2, justifyContent: "center", margin: "4px 0" }}>
+                    {[1, 2, 3, 4, 5].map(st => (
+                      <span key={st} style={{ color: st <= 4 ? "#F59E0B" : t.borderMed, fontSize: 14 }}>★</span>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 9, color: t.textMuted }}>بناءً على 16 تقييم</div>
+                </div>
+                
+                {/* Stats bars */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {[
+                    { stars: "5 نجوم", pct: "85%" },
+                    { stars: "4 نجوم", pct: "15%" },
+                    { stars: "3 نجوم", pct: "0%" },
+                    { stars: "2 نجوم", pct: "0%" },
+                    { stars: "1 نجمة", pct: "0%" }
+                  ].map((row, idx) => (
+                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10 }}>
+                      <span style={{ minWidth: 32, color: t.textMuted }}>{row.stars}</span>
+                      <div style={{ flex: 1, height: 6, background: t.surface, borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ width: row.pct, height: "100%", background: "#F59E0B", borderRadius: 3 }} />
+                      </div>
+                      <span style={{ color: t.textSec, width: 22, textAlign: "left", fontWeight: 700 }}>{row.pct}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Verified Badge */}
+              <div style={{
+                background: t.blueBg,
+                color: C.blue,
+                fontSize: 11,
+                padding: "8px 12px",
+                borderRadius: 10,
+                fontWeight: 700,
+                marginBottom: 16,
+                textAlign: "center",
+                border: `1px solid ${t.blueBorder}`
+              }}>
+                🎯 تقييمك مرتفع جداً! هذا يزيد من فرص ظهور عروضك وأعمالك بنسبة 2.5x في نتائج البحث المميزة.
+              </div>
+
+              {/* Sub tabs */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                <button onClick={() => setActiveRatingTab("client")}
+                  style={{
+                    flex: 1,
+                    padding: "8px 4px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: activeRatingTab === "client" ? C.blue : t.card,
+                    color: activeRatingTab === "client" ? "#fff" : t.textSec,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}>
+                  آراء أصحاب الأعمال عني {`(${12})`}
+                </button>
+                <button onClick={() => setActiveRatingTab("worker")}
+                  style={{
+                    flex: 1,
+                    padding: "8px 4px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: activeRatingTab === "worker" ? C.blue : t.card,
+                    color: activeRatingTab === "worker" ? "#fff" : t.textSec,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}>
+                  تقييماتي للمحترفين {`(${4})`}
+                </button>
+              </div>
+
+              {/* Comment logs list */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {activeRatingTab === "client" ? (
+                  [
+                    { name: "علاء فاروق (مقاول طنطا)", rate: 5, date: "منذ يومين", text: `${profile.name} محترف وملتزم للغاية بالمواعيد والمطابقة الفنية. أنصح بالعمل معه بشدة دون أي تفكير.` },
+                    { name: "سارة كمال (طنطا الجديدة)", rate: 5, date: "منذ أسبوع", text: "شغل ممتاز، دقة، سرعة ونظافة تامة في التسليم والتعامل قمة في الأدب والاحترام الفني." },
+                    { name: "محمد أبو رشاد (الغربية)", rate: 4, date: "منذ ٣ أسابيع", text: "شخص خلوق وعمل متكامل وصادق، كان متأخر قليلاً عن الموعد لكن العذر مقبول وجودة العمل عوضت الانتظار." }
+                  ].map((rev, i) => (
+                    <div key={i} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: t.text }}>{rev.name}</span>
+                        <span style={{ fontSize: 10, color: t.textHint }}>{rev.date}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 2, marginBottom: 5 }}>
+                        {Array(rev.rate).fill(0).map((_, k) => (
+                          <span key={k} style={{ color: "#F59E0B", fontSize: 11 }}>★</span>
+                        ))}
+                      </div>
+                      <p style={{ color: t.textSec, fontSize: 11, margin: 0, lineHeight: 1.5 }}>{rev.text}</p>
+                    </div>
+                  ))
+                ) : (
+                  [
+                    { name: "محمود لتركيب التكييف", rate: 5, date: "أبريل 2026", text: "فني ممتاز قام بتركيب الأجهزة بسرعة فائقة واحترافية منقطعة النظير." },
+                    { name: "فريق تنظيف الغربية", rate: 5, date: "مارس 2026", text: "أسرع فريق لتنظيف الشقق ووجوه الزجاج، قاموا بالعمل على أكمل وجه وبأدوات حديثة." }
+                  ].map((rev, i) => (
+                    <div key={i} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: t.text }}>{rev.name}</span>
+                        <span style={{ fontSize: 10, color: t.textHint }}>{rev.date}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 2, marginBottom: 5 }}>
+                        {Array(rev.rate).fill(0).map((_, k) => (
+                          <span key={k} style={{ color: "#F59E0B", fontSize: 11 }}>★</span>
+                        ))}
+                      </div>
+                      <p style={{ color: t.textSec, fontSize: 11, margin: 0, lineHeight: 1.4 }}>{rev.text}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === "wallet" && (
+          <div>
+            {renderHeader("المحفظة والرصيد")}
+            <div style={{ padding: 14, direction: "rtl", textAlign: "right" }}>
+              {/* Feedback messages */}
+              {walletError && (
+                <div style={{ background: t.redBg, color: C.red, padding: 10, borderRadius: 8, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+                  ⚠️ {walletError}
+                </div>
+              )}
+              {walletSuccess && (
+                <div style={{ background: t.greenBg, color: C.green, padding: 10, borderRadius: 8, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+                  ✓ {walletSuccess}
+                </div>
+              )}
+
+              {/* Gold Credit Card View */}
+              <div style={{
+                background: "linear-gradient(135deg, #1E3A8A, #3B82F6)",
+                borderRadius: 16,
+                padding: "18px 20px",
+                color: "white",
+                boxShadow: "0 6px 18px rgba(30,58,138,0.3)",
+                marginBottom: 16,
+                position: "relative",
+                overflow: "hidden"
+              }}>
+                {/* Logo and branding */}
+                <div style={{ display: "flex", justifySelf: "space-between", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                  <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: 0.5, color: "#fff" }}>أرزاق باي · ARZAQ PAY</div>
+                  <div style={{ fontSize: 18 }}>💳</div>
+                </div>
+
+                <div style={{ marginTop: 24 }}>
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", display: "block" }}>الرصيد المتاح حالياً</span>
+                  <span style={{ fontSize: 26, fontWeight: 950, color: "#fff" }}>{profile.walletBalance.toFixed(2)} <span style={{ fontSize: 13, fontWeight: 500 }}>جنيه مصري</span></span>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 20 }}>
+                  <div>
+                    <span style={{ fontSize: 8, color: "rgba(255,255,255,0.6)", display: "block" }}>صاحب الحساب</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{profile.name}</span>
+                  </div>
+                  <div style={{ fontFamily: "monospace", fontSize: 12, color: "rgba(255,255,255,0.8)" }}>**** **** **** 7359</div>
+                </div>
+
+                {/* Card decoration vector */}
+                <div style={{
+                  position: "absolute",
+                  bottom: -30,
+                  left: -30,
+                  width: 110,
+                  height: 110,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.06)"
+                }} />
+              </div>
+
+              {/* Actions buttons */}
+              <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                <button onClick={() => { setShowDepositForm(!showDepositForm); setShowWithdrawForm(false); setWalletError(""); }}
+                  style={{
+                    flex: 1,
+                    background: C.blue,
+                    color: "white",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "11px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    textAlign: "center"
+                  }}>
+                  شحن المحفظة ➕
+                </button>
+                <button onClick={() => { setShowWithdrawForm(!showWithdrawForm); setShowDepositForm(false); setWalletError(""); }}
+                  style={{
+                    flex: 1,
+                    background: t.surface,
+                    color: t.text,
+                    border: `1.5px solid ${t.border}`,
+                    borderRadius: 10,
+                    padding: "11px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    textAlign: "center"
+                  }}>
+                  سحب الرصيد 💸
+                </button>
+              </div>
+
+              {/* Dynamic Deposit Inline Form */}
+              {showDepositForm && (
+                <div style={{ background: t.card, border: `1.5px solid ${C.blue}`, borderRadius: 12, padding: 12, marginBottom: 16, animation: "slideDown 0.2s" }}>
+                  <h4 style={{ color: t.text, fontSize: 13, fontWeight: 800, margin: "0 0 10px" }}>شحن رصيد المحفظة</h4>
+                  
+                  <label style={{ fontSize: 11, color: t.textSec, display: "block", marginBottom: 4 }}>المبلغ المراد شحنه (جنيه مصري):</label>
+                  <input type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)} placeholder="مثال: 200"
+                    style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, padding: 9, color: t.text, fontSize: 12, marginBottom: 10, outline: "none", direction: "rtl", boxSizing: "border-box" }} />
+                  
+                  <label style={{ fontSize: 11, color: t.textSec, display: "block", marginBottom: 4 }}>طريقة الدفع والشحن:</label>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                    {[
+                      { id: "vodafone", label: "فودافون كاش" },
+                      { id: "instapay", label: "إنستا باي" },
+                      { id: "credit", label: "فيزا / ميزة" }
+                    ].map(ch => (
+                      <button key={ch.id} onClick={() => setDepositMethod(ch.id)}
+                        style={{
+                          flex: 1,
+                          padding: "6px 2px",
+                          borderRadius: 6,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          border: `1.5px solid ${depositMethod === ch.id ? C.blue : t.border}`,
+                          background: depositMethod === ch.id ? t.blueBg : t.surface,
+                          color: depositMethod === ch.id ? C.blue : t.textSec,
+                          cursor: "pointer"
+                        }}>
+                        {ch.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={handleAddDeposit} style={{ flex: 1, background: C.blue, color: "white", padding: "8px", borderRadius: 6, border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>تأكيد الشحن</button>
+                    <button onClick={() => setShowDepositForm(false)} style={{ background: t.surface, color: t.textSec, border: `1px solid ${t.border}`, padding: "8px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>إلغاء</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Withdraw Inline Form */}
+              {showWithdrawForm && (
+                <div style={{ background: t.card, border: `1.5px solid ${C.orange}`, borderRadius: 12, padding: 12, marginBottom: 16, animation: "slideDown 0.2s" }}>
+                  <h4 style={{ color: t.text, fontSize: 13, fontWeight: 800, margin: "0 0 10px" }}>طلب سحب رصيد</h4>
+                  
+                  <label style={{ fontSize: 11, color: t.textSec, display: "block", marginBottom: 4 }}>المبلغ المراد سحبه (ج.م):</label>
+                  <input type="number" value={withdrawAmt} onChange={e => setWithdrawAmt(e.target.value)} placeholder="مثال: 150"
+                    style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, padding: 9, color: t.text, fontSize: 12, marginBottom: 10, outline: "none", direction: "rtl", boxSizing: "border-box" }} />
+                  
+                  <label style={{ fontSize: 11, color: t.textSec, display: "block", marginBottom: 4 }}>وسيلة التحويل والسحب:</label>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                    {[
+                      { id: "vodafone", label: "فودافون كاش" },
+                      { id: "instapay", label: "إنستا باي" },
+                      { id: "credit", label: "حساب بنكي" }
+                    ].map(ch => (
+                      <button key={ch.id} onClick={() => setWithdrawMethod(ch.id)}
+                        style={{
+                          flex: 1,
+                          padding: "6px 2px",
+                          borderRadius: 6,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          border: `1.5px solid ${withdrawMethod === ch.id ? C.orange : t.border}`,
+                          background: withdrawMethod === ch.id ? C.orange + "15" : t.surface,
+                          color: withdrawMethod === ch.id ? C.orange : t.textSec,
+                          cursor: "pointer"
+                        }}>
+                        {ch.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={handleWithdraw} style={{ flex: 1, background: C.orange, color: "white", padding: "8px", borderRadius: 6, border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>تسجيل طلب السحب</button>
+                    <button onClick={() => setShowWithdrawForm(false)} style={{ background: t.surface, color: t.textSec, border: `1px solid ${t.border}`, padding: "8px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>إلغاء</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Transactions History */}
+              <h4 style={{ color: t.text, fontSize: 13, fontWeight: 800, margin: "14px 0 8px" }}>سجل كشف الحساب والعمليات</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {walletTransactions.map(trans => {
+                  const isDeposit = trans.type === "deposit";
+                  return (
+                    <div key={trans.id} style={{
+                      background: t.card,
+                      border: `1px solid ${t.border}`,
+                      borderRadius: 10,
+                      padding: 10,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
+                    }}>
+                      <div>
+                        <div style={{ color: t.text, fontSize: 11, fontWeight: 700 }}>{trans.title}</div>
+                        <div style={{ color: t.textMuted, fontSize: 9, marginTop: 2 }}>التاريخ: {trans.date}</div>
+                      </div>
+                      <span style={{
+                        fontSize: 12,
+                        fontWeight: 900,
+                        color: isDeposit ? C.green : C.red
+                      }}>
+                        {isDeposit ? `+${trans.amount}` : `${trans.amount}`} ج.م
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === "edit-profile" && (
+          <div>
+            {renderHeader("تعديل معلومات الملف والشغل")}
+            <div style={{ padding: 14, direction: "rtl", textAlign: "right" }}>
+              {editSuccess && (
+                <div style={{ background: t.greenBg, color: C.green, padding: 10, borderRadius: 8, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+                  ✓ تم تحديث الملف بنجاح! تم تطبيق الإعدادات وتثبيتها في الهوية واللوجو لجميع عملياتك.
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {/* Visual Identity / Avatar selection */}
+                <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 6 }}>
+                  <div style={{
+                    width: 54, height: 54, borderRadius: 14,
+                    background: `linear-gradient(135deg, ${C.blue}, ${C.blueDeep})`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 20, fontWeight: 900, color: "white"
+                  }}>
+                    {editName ? editName[0] : "أ"}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 11, color: t.textSec, display: "block", fontWeight: 700 }}>صورة الهوية الفنية</span>
+                    <span style={{ fontSize: 9, color: t.textHint }}>يتم توليد اللوجو تلقائياً بناء على الحرف الأول لتسهيل التعرف.</span>
+                  </div>
+                </div>
+
+                {/* Name */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>الاسم الكامل / الاسم التجاري:</label>
+                  <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+                    style={{ width: "100%", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>رقم الهاتف / واتساب مؤكد:</label>
+                  <input type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)}
+                    style={{ width: "100%", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                </div>
+
+                {/* Dropdowns */}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>الموقع الإقليمي:</label>
+                    <select value={editCity} onChange={e => setEditCity(e.target.value)}
+                      style={{ width: "100%", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10, color: t.text, fontSize: 11, outline: "none" }}>
+                      <option value="طنطا">طنطا، مصر</option>
+                      <option value="القاهرة">القاهرة، مصر</option>
+                      <option value="المحلة">المحلة، الغربية</option>
+                      <option value="الجيزة">الجيزة</option>
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>سنوات الخبرة:</label>
+                    <select value={editExp} onChange={e => setEditExp(e.target.value)}
+                      style={{ width: "100%", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10, color: t.text, fontSize: 11, outline: "none" }}>
+                      <option value="سنة واحدة">سنة واحدة</option>
+                      <option value="3 سنوات">3 سنوات</option>
+                      <option value="5 سنوات">5 سنوات</option>
+                      <option value="8 سنوات">8 سنوات</option>
+                      <option value="أكثر من 10 سنوات">أكثر من 10 سنوات</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Bio text */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>نبذة تعريفية للمهنيين وأصحاب الإعلانات:</label>
+                  <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={3}
+                    style={{ width: "100%", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box" }} />
+                </div>
+
+                {/* Skills tags selection */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 6 }}>اختر مهاراتك الفنية لتلقي إشعارات مطابقة {`(اضغط للتحديد)`}:</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {ALL_SKILLS.map(sk => {
+                      const isActive = editSkills.includes(sk);
+                      return (
+                        <button key={sk} onClick={() => handleToggleSkill(sk)}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: 12,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            transition: "all 0.15s",
+                            border: `1.5px solid ${isActive ? C.blue : t.border}`,
+                            background: isActive ? t.blueBg : t.card,
+                            color: isActive ? C.blue : t.textSec
+                          }}>
+                          {isActive ? "✓ " : ""}{sk}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button onClick={handleSaveProfile}
+                  style={{
+                    background: C.blue,
+                    color: "white",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "12px",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: "pointer",
+                    marginTop: 10,
+                    boxShadow: `0 4px 12px ${C.blue}44`
+                  }}>
+                  حفظ معلومات التعديل
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === "privacy" && (
+          <div>
+            {renderHeader("الخصوصية والأمان المتقدم")}
+            <div style={{ padding: 14, direction: "rtl", textAlign: "right" }}>
+              {pinSuccess && (
+                <div style={{ background: t.greenBg, color: C.green, padding: 10, borderRadius: 8, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+                  ✓ تم تحديث كود الأمان بنجاح!
+                </div>
+              )}
+
+              {/* Secret code pin change */}
+              <div style={{
+                background: t.card,
+                border: `1px solid ${t.border}`,
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16
+              }}>
+                <h4 style={{ color: t.text, fontSize: 12, fontWeight: 800, margin: "0 0 10px" }}>تحديث كود المرور والتحقق (رمز PIN)</h4>
+                
+                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 10, color: t.textSec, display: "block", marginBottom: 4 }}>كود PIN القديم:</label>
+                    <input type="password" placeholder="****" maxLength={4} value={oldPin} onChange={e => setOldPin(e.target.value)}
+                      style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, padding: 8, color: t.text, fontSize: 12, textAlign: "center", outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 10, color: t.textSec, display: "block", marginBottom: 4 }}>كود PIN الجديد:</label>
+                    <input type="password" placeholder="****" maxLength={4} value={newPin} onChange={e => setNewPin(e.target.value)}
+                      style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, padding: 8, color: t.text, fontSize: 12, textAlign: "center", outline: "none", boxSizing: "border-box" }} />
+                  </div>
+                </div>
+                <button onClick={handleUpdatePin} style={{ width: "100%", background: C.blue, color: "white", border: "none", padding: "8px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>تحديث كود الأمان</button>
+              </div>
+
+              {/* Toggles */}
+              <h4 style={{ color: t.text, fontSize: 12, fontWeight: 800, margin: "14px 0 10px" }}>إعدادات الهوية وسجل الظهور في المنصة</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  {
+                    val: privacySettings.twoFactor,
+                    set: (v: boolean) => setPrivacySettings({ ...privacySettings, twoFactor: v }),
+                    label: "تفعيل التحقق الثنائي (2FA)",
+                    sub: "يطلب مصادقة جوالك عند الدخول من متصفح جديد"
+                  },
+                  {
+                    val: privacySettings.appearInSearch,
+                    set: (v: boolean) => setPrivacySettings({ ...privacySettings, appearInSearch: v }),
+                    label: "الظهور العام في محركات البحث",
+                    sub: "يتيح للناس خارج تطبيق أرزاق العثور على خدماتك عبر جوجل"
+                  },
+                  {
+                    val: privacySettings.shareContactDirectly,
+                    set: (v: boolean) => setPrivacySettings({ ...privacySettings, shareContactDirectly: v }),
+                    label: "مشاركة الاتصال تلقائياً",
+                    sub: "تخطي نافذة التأكيد وإرسال جوالك بمجرد التقديم"
+                  },
+                ].map((tg, i) => (
+                  <div key={i} style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    background: t.card,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 11,
+                    padding: "12px 14px"
+                  }}>
+                    <div>
+                      <div style={{ color: t.text, fontSize: 12, fontWeight: 700 }}>{tg.label}</div>
+                      <div style={{ color: t.textMuted, fontSize: 10, marginTop: 2, lineHeight: 1.3 }}>{tg.sub}</div>
+                    </div>
+                    <button onClick={() => tg.set(!tg.val)}
+                      style={{
+                        width: 42, height: 22, borderRadius: 12,
+                        background: tg.val ? C.blue : t.surface,
+                        border: `1.5px solid ${tg.val ? C.blue : t.borderMed}`,
+                        cursor: "pointer", transition: "all 0.2s", position: "relative", flexShrink: 0
+                      }}>
+                      <div style={{
+                        position: "absolute", top: 1.5,
+                        left: tg.val ? 19 : 2.5, width: 17, height: 17,
+                        borderRadius: "50%", background: "#fff",
+                        transition: "all 0.2s"
+                      }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === "notifications" && (
+          <div>
+            {renderHeader("الإشعارات وإدارة التنبيهات")}
+            <div style={{ padding: 14, direction: "rtl", textAlign: "right" }}>
+              {/* Toggles */}
+              <div style={{
+                background: t.card,
+                border: `1.1px solid ${t.border}`,
+                borderRadius: 12,
+                padding: "8px 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                marginBottom: 16
+              }}>
+                {[
+                  { val: notifSettings.newJobs, set: (v: boolean) => setNotifSettings({ ...notifSettings, newJobs: v }), label: "إشعارات الوظائف المتطابقة" },
+                  { val: notifSettings.messages, set: (v: boolean) => setNotifSettings({ ...notifSettings, messages: v }), label: "إشعارات الرسائل والدردشات الفورية" },
+                  { val: notifSettings.offers, set: (v: boolean) => setNotifSettings({ ...notifSettings, offers: v }), label: "تنبيهات العروض الحصرية وزيادة التفاعل" }
+                ].map((notTog, ki) => (
+                  <div key={ki} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: t.textSec }}>{notTog.label}</span>
+                    <button onClick={() => notTog.set(!notTog.val)}
+                      style={{
+                        width: 38, height: 20, borderRadius: 10,
+                        background: notTog.val ? C.blue : t.surface,
+                        border: `1.5px solid ${notTog.val ? C.blue : t.borderMed}`,
+                        cursor: "pointer", transition: "all 0.2s", position: "relative", flexShrink: 0
+                      }}>
+                      <div style={{
+                        position: "absolute", top: 1.5,
+                        left: notTog.val ? 18 : 2, width: 14, height: 14,
+                        borderRadius: "50%", background: "#fff",
+                        transition: "all 0.2s"
+                      }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Feed logs list */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <h4 style={{ color: t.text, fontSize: 13, fontWeight: 800, margin: 0 }}>التنبيهات المستلمة</h4>
+                {localNotifs.length > 0 && (
+                  <button onClick={() => setLocalNotifs([])}
+                    style={{ background: "none", border: "none", color: C.red, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    مسح الكل 🗑️
+                  </button>
+                )}
+              </div>
+
+              {localNotifs.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "30px 10px", color: t.textMuted }}>
+                  <span style={{ fontSize: 34 }}>🔔</span>
+                  <p style={{ fontSize: 12, fontWeight: 700, marginTop: 10 }}>مجل الإشعارات فارغ تماماً!</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {localNotifs.map(lf => (
+                    <div key={lf.id} style={{
+                      background: t.card,
+                      border: `1px solid ${t.border}`,
+                      borderRadius: 10,
+                      padding: "10px 12px",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10
+                    }}>
+                      <span style={{ fontSize: 16 }}>{lf.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: t.text, fontSize: 11, fontWeight: 600, lineHeight: 1.4 }}>{lf.text}</div>
+                        <div style={{ color: t.textHint, fontSize: 8, marginTop: 4 }}>{lf.date}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return(
     <div style={{paddingBottom:100}}>
@@ -1582,15 +3262,17 @@ const ProfileScreen=({t,dark,toggle}: ProfileScreenProps)=>{
             <div style={{width:64,height:64,borderRadius:18,
               background:`linear-gradient(135deg,${C.blue},${C.blueDeep})`,
               display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:26,fontWeight:900,color:"white",
-              boxShadow:`0 4px 16px ${C.blue}44`}}>أ</div>
+              fontSize:26,fontWeight:950,color:"white",
+              boxShadow:`0 4px 16px ${C.blue}44`}}>
+              {profile.name ? profile.name[0] : "أ"}
+            </div>
             <div style={{position:"absolute",bottom:1,right:1,width:14,height:14,
               borderRadius:7,background:C.green,
               border:`2px solid ${dark?C.dSurface:C.lSurface}`}}/>
           </div>
           <div>
-            <h2 style={{color:t.text,fontSize:18,fontWeight:800,margin:"0 0 2px"}}>أبو ميرا</h2>
-            <div style={{color:t.textSec,fontSize:12}}>طنطا، الغربية · مصر</div>
+            <h2 style={{color:t.text,fontSize:18,fontWeight:900,margin:"0 0 2px"}}>{profile.name}</h2>
+            <div style={{color:t.textSec,fontSize:12}}>{profile.city} · مصر</div>
             <div style={{marginTop:6}}>
               <Tag color={C.blue} bg={t.blueBg} border={t.blueBorder}>✓ حساب موثق</Tag>
             </div>
@@ -1600,10 +3282,15 @@ const ProfileScreen=({t,dark,toggle}: ProfileScreenProps)=>{
         {/* Stats */}
         <div style={{display:"flex",borderTop:`1px solid ${t.border}`,
           paddingTop:0}}>
-          {[{v:"4",l:"إعلان"},{v:"84",l:"مشاهدة"},{v:"★ 4.8",l:"تقييم"},{v:"2022",l:"عضو منذ"}].map((s,i)=>(
+          {[
+            {v: myAds.length.toString(),l:"إعلان"},
+            {v:"84",l:"مشاهدة"},
+            {v:`★ ${profile.rating}`,l:"تقييم"},
+            {v: profile.since || "2022",l:"عضو منذ"}
+          ].map((s,i)=>(
             <div key={i} style={{flex:1,padding:"13px 0",textAlign:"center",
               borderLeft:i>0?`1px solid ${t.border}`:"none"}}>
-              <div style={{color:i===2?C.orange:t.text,fontSize:14,fontWeight:800}}>{s.v}</div>
+              <div style={{color:i===2?C.orange:t.text,fontSize:14,fontWeight:850}}>{s.v}</div>
               <div style={{color:t.textMuted,fontSize:10,marginTop:1}}>{s.l}</div>
             </div>
           ))}
@@ -1640,11 +3327,116 @@ const ProfileScreen=({t,dark,toggle}: ProfileScreenProps)=>{
           </button>
         </div>
 
+        {/* ── RECHARTS USER ACTIVITY CHART ── */}
+        <div style={{
+          background: t.card,
+          border: `1.5px solid ${t.border}`,
+          borderRadius: 12,
+          padding: "16px 14px",
+          marginBottom: 12,
+          direction: "rtl",
+          animation: "fadeIn 0.2s"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ textAlign: "right" }}>
+              <h4 style={{ color: t.text, fontSize: 13, fontWeight: 800, margin: 0 }}>📊 معدل النشاط اليومي</h4>
+              <p style={{ color: t.textMuted, fontSize: 10, marginTop: 2, margin: 0 }}>عدد الإعلانات المنشورة وتفاعل المشاهدات خلال آخر 30 يوماً</p>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.blue }} />
+                <span style={{ color: t.textSec, fontSize: 9, fontWeight: 600 }}>إعلانات</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#F59E0B" }} />
+                <span style={{ color: t.textSec, fontSize: 9, fontWeight: 600 }}>مشاهدات</span>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ width: "100%", height: 160, direction: "ltr" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorAds" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={C.blue} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={C.blue} stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"} vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: t.textMuted, fontSize: 9 }}
+                  interval={4}
+                />
+                <YAxis 
+                  allowDecimals={false}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: t.textMuted, fontSize: 9 }}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div style={{
+                          background: t.surface,
+                          border: `1.5px solid ${t.border}`,
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          direction: "rtl",
+                          textAlign: "right",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                        }}>
+                          <div style={{ color: t.text, fontSize: 10, fontWeight: 800, marginBottom: 4 }}>التاريخ: {data.fullDate}</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            <div style={{ color: C.blue, fontSize: 10, fontWeight: 700 }}>
+                              📢 الإعلانات المنشورة: {data.الإعلانات}
+                            </div>
+                            <div style={{ color: "#F59E0B", fontSize: 10, fontWeight: 700 }}>
+                              👁️ المشاهدات اليومية: {data.المشاهدات}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="المشاهدات" 
+                  stroke="#F59E0B" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorViews)" 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="الإعلانات" 
+                  stroke={C.blue} 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorAds)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         {/* Menu */}
         <div style={{background:t.card,border:`1px solid ${t.border}`,
-          borderRadius:11,overflow:"hidden",marginBottom:8}}>
+          borderRadius:11,overflow:"hidden",marginBottom:16}}>
           {menu.map((m,i)=>(
             <button key={i}
+              onClick={() => setActiveSection(m.id)}
               style={{width:"100%",display:"flex",alignItems:"center",
                 justifyContent:"space-between",padding:"13px 14px",background:"none",
                 border:"none",borderBottom:i<menu.length-1?`1px solid ${t.border}`:"none",
@@ -1666,17 +3458,55 @@ const ProfileScreen=({t,dark,toggle}: ProfileScreenProps)=>{
                   <div style={{color:t.textMuted,fontSize:11,marginTop:1}}>{m.s}</div>
                 </div>
               </div>
-              <Svg d={m.l==="إعلاناتي" ? "" : ic.chevL} s={14} c={t.textMuted}/>
+              <Svg d={ic.chevL} s={14} c={t.textMuted}/>
             </button>
           ))}
         </div>
 
-        <button style={{width:"100%",background:t.redBg,
-          border:"1px solid rgba(239,68,68,0.2)",color:C.red,
-          borderRadius:10,padding:"13px",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+        <button onClick={() => setShowLogoutConfirm(true)}
+          style={{width:"100%",background:t.redBg,
+          border:"1.5px solid rgba(239,68,68,0.15)",color:C.red,
+          borderRadius:10,padding:"13px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
           تسجيل الخروج
         </button>
       </div>
+
+      {/* Logout confirmation custom dialog overlay */}
+      {showLogoutConfirm && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1000, padding: 20
+        }}>
+          <div style={{
+            background: t.surface,
+            border: `1.5px solid ${t.border}`,
+            borderRadius: 16,
+            padding: 20,
+            width: "100%",
+            maxWidth: 320,
+            direction: "rtl",
+            textAlign: "center"
+          }}>
+            <span style={{ fontSize: 36 }}>🚪</span>
+            <h4 style={{ color: t.text, fontSize: 16, fontWeight: 800, margin: "10px 0 6px" }}>تسجيل الخروج</h4>
+            <p style={{ color: t.textMuted, fontSize: 11, lineHeight: 1.5, margin: "0 0 18px" }}>
+              هل أنت متأكد من رغبتك في تسجيل الخروج والعودة لشاشة البدء؟ لن تفقد بياناتك المحلية.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => { setIsLoggedOut(true); setShowLogoutConfirm(false); }}
+                style={{ flex: 1, background: C.red, color: "white", border: "none", padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                نعم، خروج
+              </button>
+              <button onClick={() => setShowLogoutConfirm(false)}
+                style={{ flex: 1, background: t.card, border: `1px solid ${t.border}`, color: t.textSec, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1684,12 +3514,147 @@ const ProfileScreen=({t,dark,toggle}: ProfileScreenProps)=>{
 /* ═══════════════════════════════════════════
    ROOT — App Entry Point
 ═══════════════════════════════════════════ */
+const LoginView = ({ t, onLogin }: { t: ThemeType; onLogin: () => void }) => {
+  const [phone, setPhone] = useState("");
+  const [pin, setPin] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorCode, setErrorCode] = useState("");
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone || !pin) {
+      setErrorCode("يرجى إدخال رقم الهاتف ورمز الأمان.");
+      return;
+    }
+    if (phone.length < 10) {
+      setErrorCode("رقم الهاتف الذي أدخلته غير صحيح.");
+      return;
+    }
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      onLogin();
+    }, 1200);
+  };
+
+  return (
+    <div style={{
+      fontFamily: "'Cairo','Tajawal',sans-serif",
+      background: t.bg,
+      height: "100dvh",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 24,
+      direction: "rtl"
+    }}>
+      {/* Centered logo container */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 30 }}>
+        <div style={{
+          width: 72, height: 72, borderRadius: 22,
+          background: `linear-gradient(135deg, ${C.blue}, ${C.blueDeep})`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: `0 8px 24px ${C.blue}33`,
+          marginBottom: 14
+        }}>
+          <span style={{ fontSize: 32, fontWeight: 950, color: "white" }}>أ</span>
+        </div>
+        <h1 style={{ color: t.text, fontSize: 24, fontWeight: 950, margin: "0 0 6px" }}>أرزاق · ARZAQ</h1>
+        <p style={{ color: t.textMuted, fontSize: 12, margin: 0, textAlign: "center", maxWidth: 280, lineHeight: 1.5 }}>
+          بوابتك الآمنة لتوظيف العمالة وعرض الخدمات الفنية في طنطا وكل المحافظات
+        </p>
+      </div>
+
+      <form onSubmit={handleLoginSubmit} style={{
+        background: t.card,
+        border: `1.5px solid ${t.border}`,
+        borderRadius: 16,
+        padding: 20,
+        width: "100%",
+        maxWidth: 340,
+        boxShadow: t.shadowCard
+      }}>
+        <h3 style={{ color: t.text, fontSize: 16, fontWeight: 800, margin: "0 0 16px", textAlign: "center" }}>تسجيل الدخول للمنصة</h3>
+
+        {errorCode && (
+          <div style={{ background: t.redBg, color: C.red, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
+            ⚠️ {errorCode}
+          </div>
+        )}
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ color: t.textSec, fontSize: 11, fontWeight: 700, display: "block", marginBottom: 6 }}>رقم الموبايل:</label>
+          <input type="tel" placeholder="01xxxxxxxxx" value={phone} onChange={e => { setPhone(e.target.value); setErrorCode(""); }}
+            style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 11, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ color: t.textSec, fontSize: 11, fontWeight: 700, display: "block", marginBottom: 6 }}>رمز الدخول السري (PIN):</label>
+          <input type="password" placeholder="****" maxLength={4} value={pin} onChange={e => { setPin(e.target.value); setErrorCode(""); }}
+            style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 11, color: t.text, fontSize: 13, textAlign: "center", outline: "none", boxSizing: "border-box" }} />
+        </div>
+
+        <button type="submit" disabled={isLoading}
+          style={{
+            width: "100%", background: C.blue, color: "white", border: "none", borderRadius: 10, padding: 13, fontSize: 13, fontWeight: 700, cursor: isLoading ? "not-allowed" : "pointer"
+          }}>
+          {isLoading ? "جاري التحقق من أوراق المصادقة..." : "تسجيل الدخول الآمن"}
+        </button>
+
+        <div style={{ textAlign: "center", marginTop: 14 }}>
+          <span style={{ fontSize: 11, color: t.textMuted }}>ليس لديك حساب مهني؟</span>
+          <button type="button" onClick={() => onLogin()} style={{ background: "none", border: "none", color: C.blue, fontSize: 11, fontWeight: 700, cursor: "pointer", marginRight: 5 }}>
+            الدخول كزائر مؤقتاً
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 export default function App(){
   const [dark,setDark]=useState(true);
   const [tab,setTab]=useState("home");
   const [jobsList,setJobsList]=useState<Job[]>(JOBS);
   const [job,setJob]=useState<Job | null>(null);
+  const [catFilter, setCatFilter] = useState<string | null>(null);
+  const [subFilter, setSubFilter] = useState<string | null>(null);
   const t=T(dark);
+
+  // User Profile Global States
+  const [profile, setProfile] = useState({
+    name: "أبو ميرا",
+    city: "طنطا",
+    locationDetail: "طنطا، الغربية",
+    phone: "01023456789",
+    verified: true,
+    rating: 4.8,
+    since: "2022",
+    walletBalance: 350.00,
+    bio: "أعمل في مجال التشطيبات والديكورات المنزلية بخبرة تزيد عن 8 سنوات. ملتزم بالجودة والمواعيد.",
+    skills: ["سباكة", "دهان داخلي", "تركيب أدوات صحية"],
+    experience: "8 سنوات",
+    avatarColor: C.blue
+  });
+
+  const [likedJobIds, setLikedJobIds] = useState<number[]>([1, 2]);
+  const [appliedJobIds, setAppliedJobIds] = useState<number[]>([]);
+  const [walletTransactions, setWalletTransactions] = useState([
+    { id: 101, title: "شحن رصيد - فودافون كاش", amount: 100, type: "deposit", date: "أمس" },
+    { id: 102, title: "شحن رصيد - إنستا باي", amount: 250, type: "deposit", date: "منذ ٣ أيام" },
+  ]);
+  const [privacySettings, setPrivacySettings] = useState({
+    twoFactor: false,
+    appearInSearch: true,
+    shareContactDirectly: true,
+  });
+  const [notifSettings, setNotifSettings] = useState({
+    newJobs: true,
+    messages: true,
+    offers: false,
+  });
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const handleRateJob = (jobId: number, rating: number) => {
     setJobsList(prevJobs => {
@@ -1767,20 +3732,53 @@ export default function App(){
     {k:"profile",l:"حساب",   d:ic.user},
   ];
 
+  const handleAddJob = (newJob: Job) => {
+    setJobsList(prev => [newJob, ...prev]);
+    setTab("home");
+  };
+
   const content=()=>{
     if(job) return <JobDetail job={job} t={t} dark={dark}
       onBack={()=>setJob(null)}
       onChat={()=>{setJob(null);setTab("chats");}}
-      onRate={(rating)=>handleRateJob(job.id, rating)}/>;
+      onRate={(rating)=>handleRateJob(job.id, rating)}
+      likedJobIds={likedJobIds}
+      setLikedJobIds={setLikedJobIds}
+      appliedJobIds={appliedJobIds}
+      setAppliedJobIds={setAppliedJobIds}/>;
     switch(tab){
-      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation}/>;
-      case"cats":   return <CategoriesScreen t={t}/>;
-      case"post":   return <PostScreen t={t}/>;
+      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter}/>;
+      case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab}/>;
+      case"post":   return <PostScreen t={t} onAddJob={handleAddJob} profile={profile}/>;
       case"chats":  return <ChatsScreen t={t} dark={dark}/>;
-      case"profile":return <ProfileScreen t={t} dark={dark} toggle={()=>setDark(d=>!d)}/>;
-      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation}/>;
+      case"profile":return <ProfileScreen 
+        t={t} 
+        dark={dark} 
+        toggle={()=>setDark(d=>!d)}
+        profile={profile}
+        setProfile={setProfile}
+        likedJobIds={likedJobIds}
+        setLikedJobIds={setLikedJobIds}
+        appliedJobIds={appliedJobIds}
+        setAppliedJobIds={setAppliedJobIds}
+        jobsList={jobsList}
+        setJobsList={setJobsList}
+        onViewJob={setJob}
+        walletTransactions={walletTransactions}
+        setWalletTransactions={setWalletTransactions}
+        privacySettings={privacySettings}
+        setPrivacySettings={setPrivacySettings}
+        notifSettings={notifSettings}
+        setNotifSettings={setNotifSettings}
+        isLoggedOut={isLoggedOut}
+        setIsLoggedOut={setIsLoggedOut}/>;
+      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter}/>;
     }
   };
+
+  if (isLoggedOut) {
+    return <LoginView t={t} onLogin={() => { setIsLoggedOut(false); setTab("home"); }} />;
+  }
 
   return(
     <div style={{fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
