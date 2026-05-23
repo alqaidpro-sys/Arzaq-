@@ -945,6 +945,8 @@ interface CategoriesScreenProps {
   subFilter: string | null;
   setSubFilter: (v: string | null) => void;
   setTab: (v: string) => void;
+  jobsList: Job[];
+  onJob: (job: Job) => void;
 }
 
 const CategoriesScreen = ({
@@ -953,10 +955,15 @@ const CategoriesScreen = ({
   setCatFilter,
   subFilter,
   setSubFilter,
-  setTab
+  setTab,
+  jobsList,
+  onJob
 }: CategoriesScreenProps)=>{
-  const [exp,setExp]=useState<string | null>(null);
-  const [searchQuery,setSearchQuery]=useState("");
+  const [activeCategory, setActiveCategory] = useState<Category | null>(null);
+  const [selectedSub, setSelectedSub] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchJobQuery, setSearchJobQuery] = useState("");
+  const [exp, setExp] = useState<string | null>(null);
 
   const filteredCats = CATS.filter(cat => {
     if (!searchQuery) return true;
@@ -964,6 +971,204 @@ const CategoriesScreen = ({
     return cat.ar.toLowerCase().includes(q) || 
            cat.subs.some(sub => sub.toLowerCase().includes(q));
   });
+
+  // Dedicated Category Page layout
+  if (activeCategory) {
+    const catJobs = jobsList.filter(job => job.catId === activeCategory.id);
+    
+    const filteredJobs = catJobs.filter(job => {
+      const matchesSub = !selectedSub || job.sub === selectedSub;
+      if (!searchJobQuery) return matchesSub;
+      const q = searchJobQuery.toLowerCase().trim();
+      return matchesSub && (
+        job.title.toLowerCase().includes(q) ||
+        (job.desc || "").toLowerCase().includes(q) ||
+        job.pName.toLowerCase().includes(q)
+      );
+    });
+
+    return (
+      <div style={{ paddingBottom: 100, direction: "rtl", animation: "fadeIn 0.2s" }}>
+        {/* Sub-header / Title block */}
+        <div style={{
+          background: `linear-gradient(135deg, ${C.blue}0A, ${C.blueDeep}14)`,
+          borderBottom: `1px solid ${t.border}`,
+          padding: "16px 14px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12
+        }}>
+          {/* Right section: Back button & Title */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button onClick={() => { setActiveCategory(null); setSelectedSub(null); setSearchJobQuery(""); }}
+              style={{
+                background: t.card,
+                border: `1.5px solid ${t.border}`,
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: t.textSec,
+                boxShadow: t.shadowCard
+              }}>
+              <Svg d={ic.chevR} s={16} c={t.textSec} />
+            </button>
+            
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 4 }}>
+              <span style={{ fontSize: 24 }}>{activeCategory.emoji}</span>
+              <div style={{ textAlign: "right" }}>
+                <h2 style={{ color: t.text, fontSize: 16, fontWeight: 900, margin: 0 }}>
+                  قسم {activeCategory.ar}
+                </h2>
+                <span style={{ color: t.textMuted, fontSize: 11 }}>
+                  {catJobs.length} إعلان نشط متاح حالياً
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div style={{
+            background: t.blueBg,
+            border: `1px solid ${t.blueBorder}`,
+            color: C.blue,
+            fontSize: 11,
+            fontWeight: 700,
+            padding: "4px 10px",
+            borderRadius: 8
+          }}>
+            تصفح مباشر ⚡
+          </div>
+        </div>
+
+        {/* Search within Category */}
+        <div style={{ padding: "12px 14px 4px" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, background: t.card,
+            border: `1px solid ${t.border}`, borderRadius: 10, padding: "9px 13px"
+          }}>
+            <Svg d={ic.search} s={16} c={t.textMuted} />
+            <input
+              value={searchJobQuery}
+              onChange={(e) => setSearchJobQuery(e.target.value)}
+              placeholder={`ابحث داخل قسم ${activeCategory.ar}...`}
+              style={{
+                flex: 1, background: "none", border: "none",
+                color: t.text, fontSize: 13, outline: "none", fontFamily: "inherit"
+              }}
+            />
+            {searchJobQuery && (
+              <button onClick={() => setSearchJobQuery("")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                <Svg d={ic.x} s={14} c={t.textMuted} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Horizontal Subcategories Scroll */}
+        <div style={{ paddingTop: 10, paddingBottom: 10 }}>
+          <div style={{
+            display: "flex", gap: 6, padding: "0 14px", overflowX: "auto",
+            scrollbarWidth: "none"
+          }}>
+            {/* "الكل" (ALL) Tab option */}
+            <button
+              onClick={() => setSelectedSub(null)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 99,
+                flexShrink: 0,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.15s",
+                border: `1px solid ${!selectedSub ? C.blue : t.border}`,
+                background: !selectedSub ? C.blue : t.card,
+                color: !selectedSub ? "#fff" : t.textSec,
+                boxShadow: !selectedSub ? `0 4px 12px ${C.blue}33` : "none"
+              }}>
+              🌟 الكل
+            </button>
+
+            {/* Sub-specialties */}
+            {activeCategory.subs.map(subName => {
+              const isActive = selectedSub === subName;
+              return (
+                <button
+                  key={subName}
+                  onClick={() => setSelectedSub(subName)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 99,
+                    flexShrink: 0,
+                    fontSize: 12,
+                    fontWeight: isActive ? 800 : 600,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    border: `1px solid ${isActive ? C.blue : t.border}`,
+                    background: isActive ? C.blue : t.card,
+                    color: isActive ? "#fff" : t.textSec,
+                    boxShadow: isActive ? `0 4px 12px ${C.blue}33` : "none"
+                  }}>
+                  {subName}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Ads Cards List */}
+        <div style={{ padding: "0 12px 24px" }}>
+          {filteredJobs.length === 0 ? (
+            <div style={{
+              background: t.card,
+              border: `1px solid ${t.border}`,
+              borderRadius: 16,
+              padding: "40px 20px",
+              textAlign: "center",
+              marginTop: 10
+            }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
+              <h4 style={{ color: t.text, fontSize: 14, fontWeight: 800, margin: "0 0 6px" }}>
+                لا توجد إعلانات مطابقة حالياً
+              </h4>
+              <p style={{ color: t.textMuted, fontSize: 12, margin: "0 0 16px", lineHeight: 1.6 }}>
+                {selectedSub 
+                  ? `لم يقم أحد بنشر طلبات أو عروض عمالة في تخصص "${selectedSub}" بعد.`
+                  : "لا توجد طلبات أو عروض في هذا القسم حالياً."}
+              </p>
+              <button 
+                onClick={() => setTab("post")}
+                style={{
+                  background: C.blue,
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer"
+                }}>
+                كن أول من يعلن الآن ➕
+              </button>
+            </div>
+          ) : (
+            filteredJobs.map(job => (
+              <JobCard 
+                key={job.id} 
+                job={job} 
+                t={t} 
+                onClick={() => onJob(job)} 
+              />
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{paddingBottom:100}}>
@@ -1014,9 +1219,8 @@ const CategoriesScreen = ({
                 {/* Enter primary section option */}
                 <div style={{marginBottom:10}}>
                   <button onClick={()=>{
-                    setCatFilter(cat.id);
-                    setSubFilter(null);
-                    setTab("home");
+                    setActiveCategory(cat);
+                    setSelectedSub(null);
                   }} style={{
                     width:"100%",background:C.blue,border:"none",color:"#fff",
                     borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:700,
@@ -1032,9 +1236,8 @@ const CategoriesScreen = ({
                 <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
                   {cat.subs.map(s=>(
                     <button key={s} onClick={()=>{
-                      setCatFilter(cat.id);
-                      setSubFilter(s);
-                      setTab("home");
+                      setActiveCategory(cat);
+                      setSelectedSub(s);
                     }}
                       style={{padding:"6px 13px",borderRadius:99,
                         border:`1px solid ${t.border}`,background:t.card,
@@ -3748,7 +3951,7 @@ export default function App(){
       setAppliedJobIds={setAppliedJobIds}/>;
     switch(tab){
       case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter}/>;
-      case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab}/>;
+      case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab} jobsList={jobsList} onJob={setJob}/>;
       case"post":   return <PostScreen t={t} onAddJob={handleAddJob} profile={profile}/>;
       case"chats":  return <ChatsScreen t={t} dark={dark}/>;
       case"profile":return <ProfileScreen 
