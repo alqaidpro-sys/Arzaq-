@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "AdListing": {
+      "title": "AdListing",
+      "description": "A representation of a job or service advertisement listed on the platform.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique string ID of the listing"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["worker", "job"],
+          "description": "Whether the ad is looking for a worker or offering labor"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the advertisement"
+        },
+        "catId": {
+          "type": "string",
+          "description": "The major category ID (e.g. realestate, factories, restaurants, clean, plumb, etc.)"
+        },
+        "sub": {
+          "type": "string",
+          "description": "Subcategory or specialty"
+        },
+        "loc": {
+          "type": "string",
+          "description": "Governorate and city location string"
+        },
+        "price": {
+          "type": "number",
+          "description": "Wage or pricing amount"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Frequency of price (e.g. daily, monthly, total)"
+        },
+        "urgent": {
+          "type": "boolean",
+          "description": "Whether the ad needs urgent action"
+        },
+        "age": {
+          "type": "string",
+          "description": "Faux age or time string representing elapsed duration"
+        },
+        "views": {
+          "type": "number",
+          "description": "Views counter"
+        },
+        "apps": {
+          "type": "number",
+          "description": "Applicants or responses counter"
+        },
+        "poster": {
+          "type": "string",
+          "description": "Phone number or ID of the poster"
+        },
+        "pName": {
+          "type": "string",
+          "description": "Name of the poster"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether the poster is verified"
+        },
+        "stars": {
+          "type": "number",
+          "description": "Star rating out of 5"
+        },
+        "desc": {
+          "type": "string",
+          "description": "Full description of the listing"
+        }
+      },
+      "required": ["id", "type", "title", "catId", "loc", "price", "desc"]
+    }
+  },
+  "firestore": {
+    "jobs": {
+      "schema": "AdListing",
+      "description": "Collection storing all active job and worker advertisement listings."
+    }
+  }
+}

@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Cell } from "recharts";
+import { EGYPT_GOVERNORATES, Governorate, City } from "./egyptData";
+import { EgyptLocationPicker, LocationValue } from "./components/EgyptLocationPicker";
+import { ArzaqAuthView } from "./components/ArzaqAuthView";
+import { db, handleFirestoreError, OperationType } from "./firebase";
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 
 /* ═══════════════════════════════════════════════════════════
    DESIGN SYSTEM — Dubizzle-grade professional
@@ -267,6 +272,8 @@ const ic = {
 /* ── DATA ─────────────────────────────────────────────── */
 const CATS: Category[] = [
   { id:"realestate", ar:"عقارات",    emoji:"🏢", count:245, subs:["ايجار","بيع","شقه","فيلا","ارضي","مصايف","جميع انواع العقارات"] },
+  { id:"factories", ar:"مصانع",      emoji:"🏭", count:312, subs:["عمال إنتاج","مساعد إنتاج","فني صيانة","مشغل آلات","حراسة مصانع","عمال تعبئة وتغليف","عامل يومية"] },
+  { id:"restaurants", ar:"مطاعم",    emoji:"🍔", count:428, subs:["عامل مطبخ","عامل صالة (ويتر)","شيف غربي","شيف شرقي / شواية","كاشير","عامل جلي صحون","طيار دليفري","عضو فريق (كرو)"] },
   { id:"clean",  ar:"تنظيف",      emoji:"🧹", count:412, subs:["تنظيف منازل","مكاتب","بعد البناء","خزانات","سجاد","واجهات زجاج"] },
   { id:"plumb",  ar:"سباكة",      emoji:"🔧", count:284, subs:["إصلاح تسربات","تركيب أدوات صحية","شبكات مياه","صرف صحي","سخانات"] },
   { id:"elec",   ar:"كهرباء",     emoji:"⚡", count:376, subs:["تمديدات كهربائية","تركيب إضاءة","لوحات توزيع","صيانة أجهزة","طاقة شمسية"] },
@@ -327,6 +334,44 @@ const generateFakeJobs = (): Job[] => {
         "شقة لقطة كاملة المرافق والتشطيب جاهزة للسكن الفوري"
       ],
       desc: "عروض وطلبات العقارات بجميع أنواعها؛ شقق للإيجار أو للبيع، فيلات مستقلة، شقق دور أرضي، شاليهات مصيفية واستثمار عقاري متميز."
+    },
+    factories: {
+      needWorker: [
+        "مطلوب عمال إنتاج لمصنع غزل ونسيج بالمحلة",
+        "مطلوب فني صيانة ميكانيكية لمصنع مواد غذائية",
+        "مطلوب عامل تعبئة وتغليف لمصنع كرتون بطنطا",
+        "مطلوب مشغل ماكينات بلاستيك خبرة بمصنع بلاستيك",
+        "مطلوب مساعدين إنتاج للعمل بصناعات كيماوية عاجل",
+        "مطلوب أفراد حراسة وأمن لمصانع بالمنطقة الصناعية"
+      ],
+      needJob: [
+        "عامل إنتاج نشيط خبرة 3 سنوات في مصانع الأغذية جاهز",
+        "فني صيانة كهربائية وإلكترونيات مصانع خبرة بالماكينات",
+        "عامل تعبئة وتغليف وساعة ملتزم بمواعيد ورديات المصنع",
+        "مشغل مقصات ومكابس هيدروليكية خبرة بالمصانع الكبرى",
+        "عامل خدمات ومساعدة عامة بالمصانع والورش الكبيرة والمخازن",
+        "رئيس وردية إنتاج خبرة في إدارة وتوجيه العمال بالمصنع"
+      ],
+      desc: "طلبات وعروض التوظيف للمصانع والمنشآت الصناعية؛ نبحث عن عمال إنتاج وفنيين ومساعدين صيانة وحراسة ذوي كفاءة."
+    },
+    restaurants: {
+      needWorker: [
+        "مطلوب عامل مطبخ وغسيل أطباق لمطعم وجبات سريعة",
+        "مطلوب ويتر / صالة حسن المظهر لمطعم مشويات شهير",
+        "مطلوب طباخ شيف شرقي / شواية تخصص كباب وكفتة",
+        "مطلوب طيارين دليفري بسياراتهم أو موتوسيكلاتهم دليفري اليوم",
+        "مطلوب كاشير أمين وصاحب خبرة ببرامج الكاشير لمطعم بيتزا",
+        "مطلوب مساعد شيف لتحضير وتجهيز المكونات للمطعم"
+      ],
+      needJob: [
+        "شيف غربي محترف برجر وبستا متواجد للعمل الفوري",
+        "عامل مطبخ وجلي صحون مجتهد وملتزم بالعمل بمطعم",
+        "طيار دليفري نشيط مع موتوسيكل جاهز للتوصيل السريع",
+        "كابتن صالة / ويتر خبرة في خدمة الزبائن بالمطاعم الكبرى",
+        "شيف بيتزا وفطير شرقي خبرة 8 سنوات يطلب فرصة عمل",
+        "مساعد مطبخ وتجهيز أغذية كفاءة في العمل تحت الضغط"
+      ],
+      desc: "عروض لتأمين كوادر المطاعم من شيفات، ويترز، عمال مطبخ، كاشير وطيارين دليفري، مع توفير فرص عمل للمهنيين."
     },
     clean: {
       needWorker: [
@@ -1398,7 +1443,7 @@ interface HomeScreenProps {
   dark: boolean;
   onJob: (job: Job) => void;
   onCats: () => void;
-  selectedLocation: "all" | "tanta" | "cairo";
+  selectedLocation: LocationValue;
   catFilter: string | null;
   setCatFilter: (v: string | null) => void;
   subFilter: string | null;
@@ -1436,14 +1481,19 @@ const HomeScreen = ({
       return j.title.includes(subFilter) || j.desc.includes(subFilter);
     })
     .filter(j=>{
-      if (selectedLocation === "all") return true;
-      if (selectedLocation === "tanta") {
-        return j.loc.includes("طنطا");
+      if (!selectedLocation || selectedLocation.govId === "all") return true;
+      const cleanLoc = j.loc.toLowerCase();
+      const matchesGov = cleanLoc.includes(selectedLocation.govName.toLowerCase());
+      
+      if (selectedLocation.cityId !== "all") {
+        const matchesCity = cleanLoc.includes(selectedLocation.cityName.toLowerCase());
+        
+        if (selectedLocation.village !== "all") {
+          return cleanLoc.includes(selectedLocation.village.toLowerCase());
+        }
+        return matchesCity;
       }
-      if (selectedLocation === "cairo") {
-        return j.loc.includes("القاهرة") || j.loc.includes("نصر") || j.loc.includes("أكتوبر") || j.loc.includes("الشيخ زايد");
-      }
-      return true;
+      return matchesGov;
     });
 
   return (
@@ -2058,7 +2108,13 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
   const [desc,setDesc]=useState("");
   const [price,setPrice]=useState("");
   const [unit,setUnit]=useState("ثابت");
-  const [loc,setLoc]=useState("");
+  const [locObj, setLocObj] = useState<LocationValue>({
+    govId: "gharbia",
+    govName: "الغربية",
+    cityId: "tanta",
+    cityName: "طنطا",
+    village: "all"
+  });
   const [urgent,setUrgent]=useState(false);
   const [nego,setNego]=useState(false);
   const [contact,setContact]=useState("both");
@@ -2139,6 +2195,8 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
   const simulatePhoto = () => {
     const placeholders: Record<string, string> = {
       realestate: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80",
+      factories: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=400&q=80",
+      restaurants: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80",
       clean: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=400&q=80",
       plumb: "https://images.unsplash.com/photo-1542013936693-8848e574047a?auto=format&fit=crop&w=400&q=80",
       elec: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
@@ -2174,13 +2232,17 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
     
     const newJobId = Date.now();
 
+    const formattedLoc = locObj.govId === "all" 
+      ? "كل مصر" 
+      : `${locObj.village !== "all" ? locObj.village + "، " : ""}${locObj.cityId !== "all" ? locObj.cityName + "، " : ""}${locObj.govName}`;
+
     const newJob: Job = {
       id: newJobId,
       type: mode,
       title: title,
       catId: cat || "all",
       sub: "عام",
-      loc: loc || "طنطا",
+      loc: formattedLoc,
       price: parseInt(price) || 0,
       unit: unit === "ثابت" ? "سعر ثابت" : (unit === "ساعة" ? "ساعة" : "يوم"),
       urgent: urgent,
@@ -2232,7 +2294,7 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
       <p style={{color:t.textMuted,fontSize:13,maxWidth:260,lineHeight:1.6,margin:"0 0 24px"}}>
         سيتواصل معك المهنيون قريباً. يمكنك متابعة الإعلان من صفحة إعلاناتي.
       </p>
-      <button onClick={()=>{setDone(false);setTitle("");setDesc("");setPrice("");setCat(null);setLoc("");setImages([]);}}
+      <button onClick={()=>{setDone(false);setTitle("");setDesc("");setPrice("");setCat(null);setLocObj({govId:"gharbia",govName:"الغربية",cityId:"tanta",cityName:"طنطا",village:"all"});setImages([]);}}
         style={{background:C.blue,border:"none",color:"#fff",borderRadius:10,
           padding:"12px 28px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
         نشر إعلان آخر
@@ -2318,11 +2380,21 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
       </div>
 
       {/* Location */}
-      <div style={{marginBottom:13}}>
-        <label style={lbl}>الموقع</label>
-        <input value={loc} onChange={e=>setLoc(e.target.value)}
-          placeholder="المدينة / المنطقة / الحي"
-          style={inp()} onFocus={foc} onBlur={blr}/>
+      <div style={{marginBottom:18}}>
+        <div style={{ 
+          background: t.card, 
+          padding: "14px 12px", 
+          borderRadius: 14, 
+          border: `1.5px solid ${t.border}`,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.01)" 
+        }}>
+          <EgyptLocationPicker 
+            value={locObj}
+            onChange={setLocObj}
+            t={t}
+            allowAll={false}
+          />
+        </div>
       </div>
 
       {/* Photo upload & Camera Capture */}
@@ -2338,209 +2410,85 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
           onChange={handleFileUpload} 
         />
 
-        {cameraActive ? (
-          <div style={{
-            background: "#0d0f14",
-            border: `2px solid ${C.blue}`,
-            borderRadius: 14,
-            padding: 10,
-            overflow: "hidden",
-            position: "relative",
-            marginBottom: 12,
-            boxShadow: `0 4px 20px ${C.blue}22`
-          }}>
-            {cameraError ? (
-              <div style={{padding: "20px 14px", textAlign: "center", direction: "rtl"}}>
-                <span style={{fontSize: 24, display: "block", marginBottom: 8}}>⚠️</span>
-                <p style={{color: "#FCA5A5", fontSize: 12, margin: "0 0 12px", lineHeight: 1.6}}>{cameraError}</p>
-                <div style={{display: "flex", gap: 8, justifyContent: "center"}}>
-                  <button 
-                    onClick={simulatePhoto}
-                    style={{
-                      background: C.blue, border: "none", color: "#fff",
-                      borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer"
-                    }}
-                  >
-                    توليد صورة نموذجية
-                  </button>
-                  <button 
-                    onClick={stopCamera}
-                    style={{
-                      background: "rgba(255,255,255,0.15)", border: "none", color: "#fff",
-                      borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer"
-                    }}
-                  >
-                    إلغاء
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                {/* Viewfinder Frame */}
-                <div style={{
-                  position: "relative",
-                  width: "100%",
-                  height: 200,
-                  background: "#000",
-                  borderRadius: 10,
-                  overflow: "hidden",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
-                    style={{width: "100%", height: "100%", objectFit: "cover"}}
-                  />
-                  
-                  {/* Grid Lines Overlay */}
-                  <div style={{
-                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                    border: "1px dashed rgba(255,255,255,0.15)", pointerEvents: "none",
-                    display: "flex"
-                  }}>
-                    <div style={{flex: 1, borderRight: "1px dashed rgba(255,255,255,0.15)"}} />
-                    <div style={{flex: 1, borderRight: "1px dashed rgba(255,255,255,0.15)"}} />
-                  </div>
-                  <div style={{
-                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                    display: "flex", flexDirection: "column", pointerEvents: "none"
-                  }}>
-                    <div style={{flex: 1, borderBottom: "1px dashed rgba(255,255,255,0.15)"}} />
-                    <div style={{flex: 1, borderBottom: "1px dashed rgba(255,255,255,0.15)"}} />
-                  </div>
-
-                  {/* Red Recording Dot */}
-                  <div style={{
-                    position: "absolute", top: 12, right: 12,
-                    display: "flex", alignItems: "center", gap: 5,
-                    background: "rgba(0,0,0,0.6)", padding: "4px 8px", borderRadius: 20
-                  }}>
-                    <span style={{
-                      width: 8, height: 8, borderRadius: "50%", background: "#EF4444"
-                    }} />
-                    <span style={{color: "#fff", fontSize: 9, fontWeight: 700, fontFamily: "monospace"}}>LIVE</span>
-                  </div>
-                </div>
-
-                {/* Shutter controls */}
-                <div style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "10px 4px 2px", direction: "rtl"
-                }}>
-                  <button 
-                    onClick={stopCamera}
-                    style={{
-                      background: "rgba(239, 68, 68, 0.15)", border: `1px solid ${C.red}44`,
-                      color: "#F87171", borderRadius: 8, padding: "8px 16px",
-                      fontSize: 12, fontWeight: 700, cursor: "pointer"
-                    }}
-                  >
-                    إلغاء ✕
-                  </button>
-
-                  {/* Outer Shutter Ring */}
-                  <button 
-                    onClick={capturePhoto}
-                    style={{
-                      width: 48, height: 48, borderRadius: "50%", background: "#fff",
-                      border: `4px solid ${C.blue}`, cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      boxShadow: "0 0 12px rgba(255,255,255,0.3)",
-                      transition: "transform 0.1s"
-                    }}
-                  >
-                    <div style={{width: 30, height: 30, borderRadius: "50%", background: C.blue}} />
-                  </button>
-
-                  <button 
-                    onClick={simulatePhoto}
-                    style={{
-                      background: "rgba(255,255,255,0.1)", border: "none",
-                      color: "#E2E8F0", borderRadius: 8, padding: "8px 12px",
-                      fontSize: 11, fontWeight: 600, cursor: "pointer"
-                    }}
-                  >
-                    صورة تمثيلية ⚡
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div style={{
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files) {
+              const filesArray = Array.from(e.dataTransfer.files) as Blob[];
+              filesArray.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  if (typeof reader.result === "string") {
+                    setImages(prev => [...prev, reader.result as string]);
+                  }
+                };
+                reader.readAsDataURL(file);
+              });
+            }
+          }}
+          style={{
             background: t.card,
-            border: `1.5px dashed ${t.borderMed}`,
-            borderRadius: 14,
-            padding: "20px 14px",
-            textAlign: "center"
+            border: `2px dashed ${t.borderMed}`,
+            borderRadius: 16,
+            padding: "32px 20px",
+            textAlign: "center",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.01)"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = C.blue;
+            e.currentTarget.style.background = t.blueBg;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = t.borderMed;
+            e.currentTarget.style.background = t.card;
+          }}
+        >
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 10, direction: "rtl"
           }}>
             <div style={{
-              display: "flex", justifyContent: "center", gap: 20, marginBottom: 12, direction: "rtl"
+              width: 52, height: 52, borderRadius: "50%", background: t.blueBg,
+              display: "flex", alignItems: "center", justifyContent: "center"
             }}>
-              {/* Option 1: Live Camera */}
-              <button 
-                id="camera-capture-btn"
-                onClick={startCamera}
-                style={{
-                  flex: 1, background: t.surface, border: `1px solid ${t.border}`,
-                  borderRadius: 12, padding: "14px 10px", cursor: "pointer",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                  transition: "all 0.15s ease"
-                }}
-              >
-                <div style={{
-                  width: 38, height: 38, borderRadius: "50%", background: t.blueBg,
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
-                  <Svg d={ic.cam} s={20} c={C.blue} />
-                </div>
-                <span style={{color: t.text, fontSize: 12, fontWeight: 700}}>التقاط من الكاميرا</span>
-                <span style={{color: t.textMuted, fontSize: 9}}>تصوير فوري للعمل</span>
-              </button>
-
-              {/* Option 2: Upload Files */}
-              <button 
-                id="file-upload-btn"
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  flex: 1, background: t.surface, border: `1px solid ${t.border}`,
-                  borderRadius: 12, padding: "14px 10px", cursor: "pointer",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                  transition: "all 0.15s ease"
-                }}
-              >
-                <div style={{
-                  width: 38, height: 38, borderRadius: "50%", background: t.blueBg,
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                </div>
-                <span style={{color: t.text, fontSize: 12, fontWeight: 700}}>رفع من الألبوم</span>
-                <span style={{color: t.textMuted, fontSize: 9}}>اختر صوراً مخزنة</span>
-              </button>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            </div>
+            
+            <div>
+              <span style={{color: t.text, fontSize: 13, fontWeight: 800, display: "block", marginBottom: 4}}>
+                اضغط هنا لرفع صور الإعلان أو اسحبها هنا 🖼️
+              </span>
+              <span style={{color: t.textMuted, fontSize: 11, display: "block"}}>
+                يمكنك اختيار صورة أو أكثر لعرضها مباشرة كخلفية لإعلانك
+              </span>
             </div>
 
             <div 
-              onClick={simulatePhoto}
+              onClick={(e) => {
+                e.stopPropagation();
+                simulatePhoto();
+              }}
               style={{
+                marginTop: 8,
                 background: t.blueBg, border: `1px solid ${t.blueBorder}`,
-                borderRadius: 10, padding: "8px 12px", display: "inline-flex",
+                borderRadius: 10, padding: "8px 16px", display: "inline-flex",
                 alignItems: "center", gap: 6, cursor: "pointer", transition: "all 0.15s"
               }}
             >
               <span style={{fontSize: 12}}>⚡</span>
-              <span style={{color: C.blue, fontSize: 11, fontWeight: 700}}>توليد صور ذكية لقسم {CATS.find(c=>c.id===cat)?.ar || "الإعلان"}</span>
+              <span style={{color: C.blue, fontSize: 11, fontWeight: 800}}>توليد صورة ذكية تلقائياً لقسم {CATS.find(c=>c.id===cat)?.ar || "إعلانك"}</span>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Previews Frame */}
         {images.length > 0 && (
@@ -3545,13 +3493,27 @@ const ProfileScreen=({
     }
   };
 
-  const handleSetAdStatus = (jobId: number, status: "active" | "pending" | "completed") => {
-    setJobsList(prev => prev.map(j => j.id === jobId ? { ...j, status } : j));
+  const handleSetAdStatus = async (jobId: number, status: "active" | "pending" | "completed") => {
+    const targetAd = jobsList.find(j => j.id === jobId);
+    if (targetAd) {
+      try {
+        await setDoc(doc(db, "jobs", String(jobId)), {
+          ...targetAd,
+          status
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `jobs/${jobId}`);
+      }
+    }
   };
 
-  const handleDeleteAd = (jobId: number) => {
+  const handleDeleteAd = async (jobId: number) => {
     if (confirm("هل أنت متأكد من رغبتك في حذف هذا الإعلان نهائياً؟")) {
-      setJobsList(prev => prev.filter(j => j.id !== jobId));
+      try {
+        await deleteDoc(doc(db, "jobs", String(jobId)));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, `jobs/${jobId}`);
+      }
     }
   };
 
@@ -4896,7 +4858,8 @@ const ProfileScreen=({
 /* ═══════════════════════════════════════════
    ROOT — App Entry Point
 ═══════════════════════════════════════════ */
-const LoginView = ({ t, onLogin }: { t: ThemeType; onLogin: () => void }) => {
+const LoginView = ({ t, dark, onLogin }: { t: ThemeType; dark: boolean; onLogin: (guestMode?: boolean, name?: string, phone?: string) => void }) => {
+  const [authMethod, setAuthMethod] = useState<"arzaq" | "legacy">("arzaq");
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -4905,19 +4868,67 @@ const LoginView = ({ t, onLogin }: { t: ThemeType; onLogin: () => void }) => {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || !pin) {
-      setErrorCode("يرجى إدخال رقم الهاتف ورمز الأمان.");
+      setErrorCode("يرجى إدخال رقم الهاتف ورمز الأمان (PIN).");
       return;
     }
-    if (phone.length < 10) {
-      setErrorCode("رقم الهاتف الذي أدخلته غير صحيح.");
+    
+    // Egypt Phone Validation
+    const egyptPhoneRegex = /^01[0125][0-9]{8}$/;
+    if (!egyptPhoneRegex.test(phone)) {
+      setErrorCode("عذراً، أرزاق تدعم أرقام هواتف مصر فقط (+20). يرجى إدخال رقم صحيح يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً.");
       return;
     }
+
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onLogin();
+      onLogin(false, undefined, phone);
     }, 1200);
   };
+
+  if (authMethod === "arzaq") {
+    return (
+      <div style={{ width: "100%", height: "100dvh", display: "flex", flexDirection: "column", background: t.bg }}>
+        {/* Top switch bar with glowing toggle button */}
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          padding: "10px 16px", 
+          borderBottom: `1px solid ${t.border}`, 
+          background: t.surface 
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: t.textSec }}>بوابة الدخول الذكية لأرزاق مصر 🇪🇬</span>
+          <button 
+            onClick={() => setAuthMethod("legacy")}
+            style={{ 
+              background: t.blueBg, 
+              border: `1px solid ${t.blueBorder}`, 
+              borderRadius: 8,
+              padding: "5px 10px",
+              color: t.blue, 
+              fontSize: 11.5, 
+              fontWeight: 800, 
+              cursor: "pointer"
+            }}
+          >
+            الدخول القديم (رمز PIN) 🔑
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <ArzaqAuthView 
+            t={t} 
+            dark={dark} 
+            titleMessage="سجل حسابك أو ادخل برقم الهاتف والرسائل أو جوجل ⚡"
+            onDismiss={() => onLogin(true)}
+            onLoginSuccess={(name, phone) => {
+              onLogin(false, name, phone);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -4932,7 +4943,7 @@ const LoginView = ({ t, onLogin }: { t: ThemeType; onLogin: () => void }) => {
       direction: "rtl"
     }}>
       {/* Centered logo container */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 30 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
         <div style={{
           width: 72, height: 72, borderRadius: 22,
           background: `linear-gradient(135deg, ${C.blue}, ${C.blueDeep})`,
@@ -4957,7 +4968,16 @@ const LoginView = ({ t, onLogin }: { t: ThemeType; onLogin: () => void }) => {
         maxWidth: 340,
         boxShadow: t.shadowCard
       }}>
-        <h3 style={{ color: t.text, fontSize: 16, fontWeight: 800, margin: "0 0 16px", textAlign: "center" }}>تسجيل الدخول للمنصة</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ color: t.text, fontSize: 15, fontWeight: 800, margin: 0 }}>الدخول برقم الهاتف والرمز (PIN)</h3>
+          <button 
+            type="button" 
+            onClick={() => setAuthMethod("arzaq")} 
+            style={{ background: "none", border: "none", color: C.blue, fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
+          >
+            جرب الدخول الذكي ↩
+          </button>
+        </div>
 
         {errorCode && (
           <div style={{ background: t.redBg, color: C.red, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
@@ -4966,9 +4986,15 @@ const LoginView = ({ t, onLogin }: { t: ThemeType; onLogin: () => void }) => {
         )}
 
         <div style={{ marginBottom: 12 }}>
-          <label style={{ color: t.textSec, fontSize: 11, fontWeight: 700, display: "block", marginBottom: 6 }}>رقم الموبايل:</label>
-          <input type="tel" placeholder="01xxxxxxxxx" value={phone} onChange={e => { setPhone(e.target.value); setErrorCode(""); }}
-            style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 11, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+          <label style={{ color: t.textSec, fontSize: 11, fontWeight: 700, display: "block", marginBottom: 6 }}>رقم الموبايل المصرى:</label>
+          <div style={{ display: "flex", direction: "ltr", gap: 6 }}>
+            <span style={{ 
+              background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10,
+              padding: "11px 12px", color: t.textSec, fontSize: 13, fontWeight: "bold" 
+            }}>+20</span>
+            <input type="tel" placeholder="01xxxxxxxxx" value={phone} onChange={e => { setPhone(e.target.value); setErrorCode(""); }}
+              style={{ flex: 1, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 11, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box", textAlign: "left" }} />
+          </div>
         </div>
 
         <div style={{ marginBottom: 18 }}>
@@ -4984,10 +5010,12 @@ const LoginView = ({ t, onLogin }: { t: ThemeType; onLogin: () => void }) => {
           {isLoading ? "جاري التحقق من أوراق المصادقة..." : "تسجيل الدخول الآمن"}
         </button>
 
-        <div style={{ textAlign: "center", marginTop: 14 }}>
-          <span style={{ fontSize: 11, color: t.textMuted }}>ليس لديك حساب مهني؟</span>
-          <button type="button" onClick={() => onLogin()} style={{ background: "none", border: "none", color: C.blue, fontSize: 11, fontWeight: 700, cursor: "pointer", marginRight: 5 }}>
-            الدخول كزائر مؤقتاً
+        <div style={{ textAlign: "center", marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button type="button" onClick={() => onLogin(true)} style={{ background: "none", border: "none", color: t.textSec, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+            🌎 الدخول كزائر مؤقتاً
+          </button>
+          <button type="button" onClick={() => setAuthMethod("arzaq")} style={{ background: "none", border: "none", color: C.blue, fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
+            إنشاء حساب جديد ⚡
           </button>
         </div>
       </form>
@@ -5003,6 +5031,57 @@ export default function App(){
   const [catFilter, setCatFilter] = useState<string | null>(null);
   const [subFilter, setSubFilter] = useState<string | null>(null);
   const t=T(dark);
+
+  useEffect(() => {
+    const colRef = collection(db, "jobs");
+    const unsubscribe = onSnapshot(colRef, async (snapshot) => {
+      if (snapshot.empty) {
+        console.log("Firestore 'jobs' collection is empty. Seeding with default JOBS...");
+        // Seed default jobs
+        for (const defaultJob of JOBS) {
+          try {
+            await setDoc(doc(db, "jobs", String(defaultJob.id)), defaultJob);
+          } catch (err) {
+            console.error("Error seeding default job:", err);
+          }
+        }
+      } else {
+        const loadedJobs: Job[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          loadedJobs.push({
+            id: Number(data.id),
+            type: data.type || "job",
+            title: data.title || "",
+            catId: data.catId || "",
+            sub: data.sub || "",
+            loc: data.loc || "",
+            price: Number(data.price || 0),
+            unit: data.unit || "شهرياً",
+            urgent: !!data.urgent,
+            age: data.age || "الآن",
+            views: Number(data.views || 0),
+            apps: Number(data.apps || 0),
+            poster: data.poster || "",
+            pName: data.pName || "",
+            verified: !!data.verified,
+            stars: Number(data.stars || 0),
+            desc: data.desc || "",
+            ratingCount: data.ratingCount,
+            ratingsList: data.ratingsList,
+            status: data.status,
+            images: data.images
+          });
+        });
+        loadedJobs.sort((a, b) => b.id - a.id);
+        setJobsList(loadedJobs);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, "jobs");
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Advertisements Config State
   const [adsConfig, setAdsConfig] = useState<Record<string, AdBanner>>({
@@ -5021,6 +5100,22 @@ export default function App(){
       imgUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80",
       linkText: "تصفح العروض الآن",
       tag: "إعلان عقاري مميز"
+    },
+    cat_factories: {
+      id: "cat_factories",
+      title: "مجمع الغربية الصناعي — فرص واستثمار",
+      desc: "تأمين عمالة إنتاج، فنيين، ومراقبين جودة لخطوط الإنتاج بأبرز مصانع مدن الدلتا.",
+      imgUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=400&q=80",
+      linkText: "تواصل لطلب العمالة أو توظيف مصنعك",
+      tag: "شريك تيسير صناعي"
+    },
+    cat_restaurants: {
+      id: "cat_restaurants",
+      title: "مجموعة ضيافة مصر — تأمين كفاءات المطاعم",
+      desc: "نقوم بتوليد وتدريب وتأمين كوادر المطابخ والصالة والدليفري لأكبر المطاعم والبراندات.",
+      imgUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80",
+      linkText: "اطلب طاقم مطعمك اليوم 🍔",
+      tag: "تأمين كوادر الضيافة"
     },
     cat_clean: {
       id: "cat_clean",
@@ -5091,8 +5186,16 @@ export default function App(){
     offers: false,
   });
   const [isLoggedOut, setIsLoggedOut] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
-  const handleRateJob = (jobId: number, rating: number) => {
+  useEffect(() => {
+    if (isLoggedOut) {
+      setIsGuest(false);
+    }
+  }, [isLoggedOut]);
+
+  const handleRateJob = async (jobId: number, rating: number) => {
+    let updatedJobObj: Job | null = null;
     setJobsList(prevJobs => {
       const updatedJobs = prevJobs.map(j => {
         if (j.id === jobId) {
@@ -5109,6 +5212,7 @@ export default function App(){
             ratingsList: updatedList
           };
           
+          updatedJobObj = updatedJob;
           if (job && job.id === jobId) {
             setJob(updatedJob);
           }
@@ -5118,9 +5222,23 @@ export default function App(){
       });
       return updatedJobs;
     });
+
+    if (updatedJobObj) {
+      try {
+        await setDoc(doc(db, "jobs", String(jobId)), updatedJobObj);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `jobs/${jobId}`);
+      }
+    }
   };
 
-  const [selectedLocation, setSelectedLocation] = useState<"all" | "tanta" | "cairo">("tanta"); 
+  const [selectedLocation, setSelectedLocation] = useState<LocationValue>({
+    govId: "gharbia",
+    govName: "الغربية",
+    cityId: "tanta",
+    cityName: "طنطا",
+    village: "all"
+  }); 
   const [showLocModal, setShowLocModal] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [resolvedGpsName, setResolvedGpsName] = useState<string | null>(null);
@@ -5140,10 +5258,22 @@ export default function App(){
         const distToTanta = Math.sqrt(Math.pow(lat - 30.788, 2) + Math.pow(lon - 31.001, 2));
         
         if (distToTanta < distToCairo) {
-          setSelectedLocation("tanta");
+          setSelectedLocation({
+            govId: "gharbia",
+            govName: "الغربية",
+            cityId: "tanta",
+            cityName: "طنطا",
+            village: "all"
+          });
           setResolvedGpsName("طنطا (GPS)");
         } else {
-          setSelectedLocation("cairo");
+          setSelectedLocation({
+            govId: "cairo",
+            govName: "القاهرة",
+            cityId: "all",
+            cityName: "كل المراكز والمدن",
+            village: "all"
+          });
           setResolvedGpsName("القاهرة (GPS)");
         }
         setGpsLoading(false);
@@ -5151,7 +5281,13 @@ export default function App(){
       },
       (error) => {
         console.warn(error);
-        setSelectedLocation("tanta");
+        setSelectedLocation({
+          govId: "gharbia",
+          govName: "الغربية",
+          cityId: "tanta",
+          cityName: "طنطا",
+          village: "all"
+        });
         setResolvedGpsName("طنطا (GPS افتراضي)");
         setGpsLoading(false);
         setShowLocModal(false);
@@ -5168,9 +5304,16 @@ export default function App(){
     {k:"profile",l:"حساب",   d:ic.user},
   ];
 
-  const handleAddJob = (newJob: Job) => {
-    setJobsList(prev => [newJob, ...prev]);
-    setTab("home");
+  const handleAddJob = async (newJob: Job) => {
+    try {
+      await setDoc(doc(db, "jobs", String(newJob.id)), {
+        ...newJob,
+        status: newJob.status || "active"
+      });
+      setTab("home");
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `jobs/${newJob.id}`);
+    }
   };
 
   const content=()=>{
@@ -5184,6 +5327,30 @@ export default function App(){
       setAppliedJobIds={setAppliedJobIds}
       adsConfig={adsConfig}
       onEditAd={setEditingAdId}/>;
+    if (isGuest && (tab === "post" || tab === "chats" || tab === "profile")) {
+      let titleMsg = "سجل الآن لنشر إعلانك مجاناً وبثوانٍ! 🚀";
+      if (tab === "chats") titleMsg = "قم بتسجيل الدخول لبدء محادثاتك الفورية 💬";
+      if (tab === "profile") titleMsg = "قم بتسجيل الدخول للوصول لبيانات حسابك المهني";
+
+      return (
+        <ArzaqAuthView 
+          t={t} 
+          dark={dark} 
+          titleMessage={titleMsg}
+          onDismiss={() => setTab("home")}
+          onLoginSuccess={(name, phone) => {
+            setProfile(prev => ({
+              ...prev,
+              name: name,
+              phone: phone,
+              verified: true
+            }));
+            setIsGuest(false);
+          }}
+        />
+      );
+    }
+
     switch(tab){
       case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId}/>;
       case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab} jobsList={jobsList} onJob={setJob} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
@@ -5215,7 +5382,23 @@ export default function App(){
   };
 
   if (isLoggedOut) {
-    return <LoginView t={t} onLogin={() => { setIsLoggedOut(false); setTab("home"); }} />;
+    return <LoginView 
+      t={t} 
+      dark={dark} 
+      onLogin={(guestMode, name, phone) => {
+        if (name || phone) {
+          setProfile(prev => ({
+            ...prev,
+            name: name || prev.name,
+            phone: phone || prev.phone,
+            verified: true
+          }));
+        }
+        setIsLoggedOut(false);
+        setIsGuest(!!guestMode);
+        setTab("home");
+      }} 
+    />;
   }
 
   return(
@@ -5258,7 +5441,7 @@ export default function App(){
           borderRadius:9,padding:"6px 9px",cursor:"pointer"}}>
           <Svg d={ic.pin} s={12} c={C.blue}/>
           <span style={{color:t.text,fontSize:11,fontWeight:600}}>
-            {selectedLocation === "all" ? "كل مصر" : (selectedLocation === "tanta" ? (resolvedGpsName || "طنطا") : (resolvedGpsName || "القاهرة"))}
+            {selectedLocation.govId === "all" ? "كل مصر" : `${selectedLocation.village !== "all" ? selectedLocation.village : (selectedLocation.cityId !== "all" ? selectedLocation.cityName : selectedLocation.govName)}`}
           </span>
           <Svg d={ic.chevD} s={11} c={t.textMuted}/>
         </button>
@@ -5373,70 +5556,23 @@ export default function App(){
             </p>
 
             {/* Options list */}
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
               
-              {/* Option 1: All Egypt */}
-              <button onClick={()=>{setSelectedLocation("all");setResolvedGpsName(null);setShowLocModal(false);}}
-                style={{
-                  width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
-                  padding:"11px 12px",borderRadius:10,
-                  background:selectedLocation==="all" && !resolvedGpsName ? t.blueBg : t.card,
-                  border:`1px solid ${selectedLocation==="all" && !resolvedGpsName ? C.blue : t.border}`,
-                  cursor:"pointer",transition:"all 0.15s",textAlign:"right"
-                }}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{fontSize:20}}>🇪🇬</div>
-                  <div>
-                    <div style={{color:t.text,fontSize:12,fontWeight:700}}>كل جمهورية مصر العربية</div>
-                    <div style={{color:t.textMuted,fontSize:10,marginTop:2}}>عرض كل إعلانات المهن والوظائف بكافة المحافظات</div>
-                  </div>
-                </div>
-                {selectedLocation==="all" && !resolvedGpsName && <Svg d={ic.check} s={14} c={C.blue} sw={3}/>}
-              </button>
+              <EgyptLocationPicker 
+                value={selectedLocation}
+                onChange={(val) => {
+                  setSelectedLocation(val);
+                  setResolvedGpsName(null);
+                }}
+                t={t}
+                allowAll={true}
+              />
 
-              {/* Option 2: Tanta */}
-              <button onClick={()=>{setSelectedLocation("tanta");setResolvedGpsName(null);setShowLocModal(false);}}
-                style={{
-                  width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
-                  padding:"11px 12px",borderRadius:10,
-                  background:selectedLocation==="tanta" && !resolvedGpsName ? t.blueBg : t.card,
-                  border:`1px solid ${selectedLocation==="tanta" && !resolvedGpsName ? C.blue : t.border}`,
-                  cursor:"pointer",transition:"all 0.15s",textAlign:"right"
-                }}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{fontSize:20}}>📍</div>
-                  <div>
-                    <div style={{color:t.text,fontSize:12,fontWeight:700}}>طنطا والغربية</div>
-                    <div style={{color:t.textMuted,fontSize:10,marginTop:2}}>التركيز على إعلانات مدينة طنطا ومحيطها بالدلتا</div>
-                  </div>
-                </div>
-                {selectedLocation==="tanta" && !resolvedGpsName && <Svg d={ic.check} s={14} c={C.blue} sw={3}/>}
-              </button>
-
-              {/* Option 3: Cairo */}
-              <button onClick={()=>{setSelectedLocation("cairo");setResolvedGpsName(null);setShowLocModal(false);}}
-                style={{
-                  width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
-                  padding:"11px 12px",borderRadius:10,
-                  background:selectedLocation==="cairo" && !resolvedGpsName ? t.blueBg : t.card,
-                  border:`1px solid ${selectedLocation==="cairo" && !resolvedGpsName ? C.blue : t.border}`,
-                  cursor:"pointer",transition:"all 0.15s",textAlign:"right"
-                }}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{fontSize:20}}>🏙️</div>
-                  <div>
-                    <div style={{color:t.text,fontSize:12,fontWeight:700}}>القاهرة الكبرى والجديدة</div>
-                    <div style={{color:t.textMuted,fontSize:10,marginTop:2}}>مدينة نصر، 6 أكتوبر، الشيخ زايد، والقاهرة الجديدة</div>
-                  </div>
-                </div>
-                {selectedLocation==="cairo" && !resolvedGpsName && <Svg d={ic.check} s={14} c={C.blue} sw={3}/>}
-              </button>
-
-              {/* Option 4: GPS */}
+              {/* GPS Option */}
               <button onClick={requestGPS} disabled={gpsLoading}
                 style={{
                   width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
-                  padding:"11px 12px",borderRadius:10,
+                  padding:"11px 12px",borderRadius:12,
                   background:resolvedGpsName ? t.blueBg : t.card,
                   border:`1px solid ${resolvedGpsName ? C.blue : t.border}`,
                   cursor:gpsLoading?"not-allowed":"pointer",transition:"all 0.15s",textAlign:"right"
@@ -5459,6 +5595,18 @@ export default function App(){
                 {resolvedGpsName && <Svg d={ic.check} s={14} c={C.blue} sw={3}/>}
               </button>
 
+              {/* Confirm button */}
+              <button 
+                onClick={() => setShowLocModal(false)}
+                style={{
+                  width: "100%", background: C.blue, border: "none", color: "#fff",
+                  borderRadius: 11, padding: "13px 0", fontSize: 13, fontWeight: 800,
+                  cursor: "pointer", filter: "drop-shadow(0 4px 12px rgba(14, 165, 233, 0.2))",
+                  transition: "all 0.1s"
+                }}
+              >
+                تطبيق نطاق البحث وعرض الإعلانات 🎯
+              </button>
             </div>
           </div>
         </div>
