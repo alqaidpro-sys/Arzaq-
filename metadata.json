@@ -1,6 +1,6 @@
 {
   "name": "Arzaq",
   "description": "منصة أرزاق للعمالة والمهن الحرة بجمهورية مصر العربية",
-  "requestFramePermissions": ["geolocation"],
+  "requestFramePermissions": ["geolocation", "camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

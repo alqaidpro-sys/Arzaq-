@@ -125,6 +125,7 @@ interface Job {
   ratingCount?: number;
   ratingsList?: number[];
   status?: "active" | "pending" | "completed";
+  images?: string[];
 }
 
 interface Category {
@@ -256,6 +257,7 @@ const ic = {
 
 /* ── DATA ─────────────────────────────────────────────── */
 const CATS: Category[] = [
+  { id:"realestate", ar:"عقارات",    emoji:"🏢", count:245, subs:["ايجار","بيع","شقه","فيلا","ارضي","مصايف","جميع انواع العقارات"] },
   { id:"clean",  ar:"تنظيف",      emoji:"🧹", count:412, subs:["تنظيف منازل","مكاتب","بعد البناء","خزانات","سجاد","واجهات زجاج"] },
   { id:"plumb",  ar:"سباكة",      emoji:"🔧", count:284, subs:["إصلاح تسربات","تركيب أدوات صحية","شبكات مياه","صرف صحي","سخانات"] },
   { id:"elec",   ar:"كهرباء",     emoji:"⚡", count:376, subs:["تمديدات كهربائية","تركيب إضاءة","لوحات توزيع","صيانة أجهزة","طاقة شمسية"] },
@@ -270,7 +272,7 @@ const CATS: Category[] = [
   { id:"labor",  ar:"عمالة عامة", emoji:"💪", count:521, subs:["حمالين","مساعدة عامة","عمال يومية","تحميل وتفريغ"] },
 ];
 
-const JOBS: Job[] = [
+const BASIC_JOBS: Job[] = [
   { id:1,  type:"need-worker", title:"مطلوب سباك لإصلاح تسرب مياه عاجل",     catId:"plumb",  sub:"إصلاح تسربات", loc:"طنطا، الغربية",    price:300, unit:"ثابت",  urgent:true,  age:"منذ ساعتين",  views:47,  apps:3,  poster:"أ.م", pName:"أحمد محمد",  verified:true,  stars:4.8, desc:"تسرب في الخط الرئيسي بالحمام. نحتاج سباك ذو خبرة للإصلاح الفوري. العمل لن يأخذ أكثر من ساعتين. توفير قطع الغيار على حسابنا." },
   { id:2,  type:"need-worker", title:"تنظيف شامل للشقة قبل الانتقال",          catId:"clean",  sub:"تنظيف منازل",  loc:"القاهرة الجديدة",  price:250, unit:"ثابت",  urgent:false, age:"منذ 5 ساعات", views:89,  apps:7,  poster:"س.ك", pName:"سارة كمال",   verified:false, stars:4.5, desc:"شقة 120م، ثلاث غرف، تنظيف عميق شامل للأرضيات والحوائط والنوافذ والحمامات والمطبخ. المطلوب فريق من شخصين على الأقل." },
   { id:3,  type:"need-job",    title:"كهربائي معتمد — ١٠ سنوات خبرة",         catId:"elec",   sub:"تمديدات كهربائية", loc:"طنطا",              price:150, unit:"/ يوم", urgent:false, age:"منذ يوم",      views:134, apps:0,  poster:"ع.ف", pName:"علاء فاروق",  verified:true,  stars:4.9, desc:"كهربائي محترف معتمد، متخصص في التمديدات الكهربائية ولوحات التوزيع وتركيب الإضاءة. أعمل بكفاءة وأضمن جميع الأعمال." },
@@ -280,6 +282,341 @@ const JOBS: Job[] = [
   { id:7,  type:"need-worker", title:"تركيب وصيانة مكيفات — 3 وحدات",          catId:"ac",     sub:"تركيب مكيفات", loc:"طنطا",              price:400, unit:"ثابت",  urgent:false, age:"منذ 6 ساعات", views:61,  apps:5,  poster:"م.ر", pName:"محمود رضا",   verified:true,  stars:4.6, desc:"تركيب 3 مكيفات سبليت في شقة جديدة. المكيفات موجودة. نحتاج فني متخصص مع أدوات التركيب." },
   { id:8,  type:"need-job",    title:"عامل تنظيف يومي — متاح فوراً",           catId:"clean",  sub:"تنظيف منازل",  loc:"طنطا، الغربية",    price:120, unit:"/ يوم", urgent:false, age:"منذ 3 أيام",  views:77,  apps:0,  poster:"ك.أ", pName:"كريم أحمد",   verified:false, stars:4.0, desc:"عامل تنظيف منازل ومكاتب بخبرة 5 سنوات. أعمل بمفردي أو ضمن فريق. لدي جميع مستلزمات التنظيف." },
 ];
+
+const generateFakeJobs = (): Job[] => {
+  const result: Job[] = [...BASIC_JOBS];
+  const names = [
+    "أحمد محمود", "محمد عبد الله", "مصطفى علي", "عمرو حسن", "علاء الدين", 
+    "هاني سمير", "كريم أحمد", "سامح فوزي", "إبراهيم خليل", "ياسر عرفة", 
+    "طارق فتحي", "وسام بكري", "عادل سامي", "كمال منصور", "خالد يوسف", 
+    "حسام رأفت", "شريف منير", "رامي صبري", "عمر سليمان", "طه حسين"
+  ];
+  const locations = [
+    "طنطا، الغربية", "طنطا، وسط البلد", "القاهرة، مدينة نصر", "الجيزة، الدقي", 
+    "القاهرة، التجمع الخامس", "الإسكندرية، سموحة", "الغربية، المحلة الكبرى", 
+    "المنصورة، الدقهلية", "طنطا، حي الجلاء", "طنطا، الاستاد"
+  ];
+  const ages = ["منذ ساعة", "منذ ٣ ساعات", "منذ يوم", "منذ يومين", "منذ ٣ أيام", "منذ أسبوع", "منذ ٥ ساعات", "منذ ٢٨ دقيقة"];
+  const units = ["ثابت", "/ يوم", "/ ساعة"];
+
+  const catSpecs: { [key: string]: { needWorker: string[], needJob: string[], desc: string } } = {
+    realestate: {
+      needWorker: [
+        "مطلوب شقة متميزة للإيجار في وسط البلد",
+        "مطلوب فيلا مستقلة للبيع كاش مباشر من المالك",
+        "مطلوب شقة دور أرضي بمدخل خاص للأعمال الإدارية",
+        "مطلوب شقة أو شاليه مصايف على البحر في الساحل",
+        "مطلوب شراء قطعة أرض للبناء والاستثمار",
+        "مطلوب شقة للسكن العائلي بتسهيلات جيدة"
+      ],
+      needJob: [
+        "شقة بفيلا للإيجار بموقع راقي جداً هادئ",
+        "فيلا فاخرة للبيع بتشطيب ممتاز سوبر لوكس",
+        "شقة أرضي ممتازة للبيع أو الإيجار التجاري",
+        "شاليهات وشقق مصايف للإيجار اليومي مجهزة بالكامل",
+        "لدينا مجموعة أراضي وعقارات سكنية وتجارية ممتازة للبيع",
+        "شقة لقطة كاملة المرافق والتشطيب جاهزة للسكن الفوري"
+      ],
+      desc: "عروض وطلبات العقارات بجميع أنواعها؛ شقق للإيجار أو للبيع، فيلات مستقلة، شقق دور أرضي، شاليهات مصيفية واستثمار عقاري متميز."
+    },
+    clean: {
+      needWorker: [
+        "مطلوب عاملة نظافة منزلية باليومية شقة متوسطة",
+        "مطلوب شركة أو فريق تنظيف بعد تشطيب شقة جديدة",
+        "مطلوب تنظيف سجاد كنب ومجالس في المنزل بأجهزة البخار",
+        "مطلوب عامل لتنظيف واجهات زجاجية لمحل تجاري بالكامل",
+        "مطلوب غسيل وتطهير خزان مياه سفلي وعلي عاجل",
+        "شغالة تنظيف دوري للبيوت والمكاتب فترات صباحية"
+      ],
+      needJob: [
+        "عاملة نظافة منزلية خبرة ممتازة وأمانة متناهية",
+        "خدمات تنظيف واجهات وسيراميك وجلي رخام متكامل",
+        "تنظيف منازل وتعقيم حمامات ومطابخ بأسعار تنافسية",
+        "مستعدة لتنظيف البيوت وغسيل السجاد والستائر بأعلى جودة",
+        "فريق متخصص في تعقيم وتطهير الخزانات والفلل والشقق",
+        "عامل نظافة مكاتب وتلميع أثاث ملتزم ومحترف"
+      ],
+      desc: "تنظيف شامل وغسيل عالي الجودة لجميع الأسطح والأرضيات والمجالس باستخدام مواد معقمة وآمنة تماماً."
+    },
+    plumb: {
+      needWorker: [
+        "مطلوب فني سباكة لإصلاح تسريب مياه بالحمام",
+        "مطلوب سباك معتمد لتأسيس شبكة مياه وصرف شقة",
+        "مطلوب تركيب أدوات صحية وخلاطات وسخان حمام",
+        "مطلوب فحص وحل مشكلة انقطاع الميه وانسداد المجاري",
+        "مطلوب تجديد سباكة مطبخ بالكامل مع تمديد مواسير جديدة",
+        "سباك طوارئ لتصليح محبس رئيسي مكسور فوراً"
+      ],
+      needJob: [
+        "سباك ممتاز لتأسيس وتشطيب الفلل والشقق بأفضل الخامات",
+        "فني صحي خبرة 12 سنة كشف تسريبات بدون تكسير بالضمان",
+        "صيانة وتصليح جميع أعطال السباكة والانسدادات المنزلية",
+        "تركيب فلاتر مياه وسخانات شمسية وغاز وكهرباء خبرة وبراعة",
+        "سباك محترف بأسعار مناسبة جداً وفي خدمتك على مدار الـ 24 ساعة",
+        "معلم سباكة لتعديل وتصميم خطوط الصرف وشبكات التغذية"
+      ],
+      desc: "جميع خدمات السباكة والصرف الصحي وكشف تسريبات المياه بدقة عالية مع توفير قطع غيار أصلية بضمان."
+    },
+    elec: {
+      needWorker: [
+        "مطلوب كهربائي لتوصيل أسلاك وتمديد شقة بأكملها",
+        "مطلوب فني تركيب نجف وإضاءة ليد وسبوتات صالون",
+        "مطلوب صيانة لوحة مفاتيح وقواطع كهربائية رئيسية",
+        "مطلوب تمديد أسلاك مكيفات وتجهيز فيش جديدة غرف النوم",
+        "مطلوب فني لحل ماس كهربائي متكرر بالبيت فجأة",
+        "مطلوب تأسيس كهرباء محل تجاري مع تركيب لوحة إعلانية"
+      ],
+      needJob: [
+        "كهربائي منازل محترف لتشطيب وصيانة التمديدات واللوحات",
+        "فني كهرباء خبرة طويلة في تركيب الإضاءة المخفية والحديثة",
+        "صيانة أعطال وتركيب مفاتيح وقواطع حماية مع توازن الأحمال",
+        "تشطيب وتأسيس شقق ومحلات وفلل من الصفر بأمان كامل وسعر ممتاز",
+        "إصلاح ماس وصيانة وتمديدات شاشات وإنتركم وأنظمة إنارة",
+        "كهربائي معتمد سرعة في الأداء ودقة تامة مع الالتزام بالوقت"
+      ],
+      desc: "تأسيس وتشطيب وصيانة الكهرباء المنزلية واللوحات بأمان تام وتوفير أفضل حلول توفير استهلاك الطاقة."
+    },
+    build: {
+      needWorker: [
+        "مطلوب عامل بناء لعمل حائط وتعديل غرفتين شقة",
+        "مطلوب مقاول لترميم واجهة منزل متهالكة وتلييسها",
+        "مطلوب ديكور وتأسيس جبسون بورد صالة وممرات شقة",
+        "مطلوب مبلط سيراميك ممتاز لأرضيات وحوائط حمام ومطبخ",
+        "مطلوب عزل مائي وحراري لسطح بيت يشتكي من الرطوبة",
+        "صنايعي تكسير حوائط ورفع مخلفات بناء عاجل وجاد"
+      ],
+      needJob: [
+        "مقاول بناء وترميمات هدم وبناء وتشطيب متكامل تسليم مفتاح",
+        "معلم تركيب سيراميك وبورسلين ورخام بمهارة ودقة وسعر مناسب",
+        "فني جبسون بورد وديكورات فرنسية حديثة لجميع الغرف والأسقف",
+        "متخصص عزل أسطح وخزانات وحمامات بأجود خامات العزل بالضمان",
+        "صنايعي محارة وتلييس داخلي وخارجي بخبرة ممتازة ودقة تسليم",
+        "معلم بناء حجر طبيعي وتصميم واجهات فلل كلاسيك ومودرن"
+      ],
+      desc: "خبرة واسعة في التشطيبات، المبلطين، تمديد الجبس البورد والأعمال الخرسانية وتعديلات المباني والترميم."
+    },
+    move: {
+      needWorker: [
+        "مطلوب سيارة نقل عفش كبيرة مع عمال للتنزيل والتحميل",
+        "مطلوب فك وتغليف ونقل أثاث من شقة بالدور الرابع",
+        "مطلوب ونش هيدروليكي لرفع أثاث ثقيل لبرج سكني",
+        "مطلوب نقل بضائع ومستلزمات مكتبية لمقر شركة جديد",
+        "مطلوب توصيل كنب وأجهزة كهربائية داخل طنطا اليوم",
+        "مطلوب كراتين وتغليف ونقل عفش لمسافة بعيدة عاجل"
+      ],
+      needJob: [
+        "نقل عفش وأثاث منزلي داخل طنطا وجميع محافظات مصر بأمان",
+        "سيارات شحن مغلقة لحماية أثاثك عمالة مدربة على التنزيل",
+        "أفضل ونش رفع أثاث هيدروليكي للأدوار المرتفعة بأسعار منافسة",
+        "فنيين فك وتركيب غرف نوم ومطابخ ونقل متكامل بدون خدوش",
+        "خدمات تغليف الأثاث بالكرتون والبابلز والستريتش لحمايته تماماً",
+        "حل شامل لنقل وتخزين الأثاث والبضائع مع توفير عمال شحن وبشر"
+      ],
+      desc: "نقل آمن وعناية تامة بجميع الممتلكات والمنقولات مع فك وتركيب وتغليف احترافي وسيارات مجهزة."
+    },
+    paint: {
+      needWorker: [
+        "مطلوب دهان لغرفة نوم للأطفال رسومات كرتون",
+        "مطلوب نقاش لشطب شقة كاملة مساحة 100 متر بدهان جوتن",
+        "مطلوب فني تركيب ورق حائط حائط ديكوري في الصالون",
+        "مطلوب معالجة رطوبة وتقشير بحوائط شقة وإعادة دهانها",
+        "مطلوب دهان خارجي لواجهة منزل طابقين عاجل",
+        "مطلوب فنان رسم حوائط وشاشات ثري دي لفيلا فخمة"
+      ],
+      needJob: [
+        "نقاش ودهان محترف تشطيبات كلاسيك ومودرن بلمسات فنية",
+        "تركيب جميع أنواع ورق الحائط ودهانات القطيفة والترخيم والديكور",
+        "تصليح رطوبة الحوائط ومعالجة التشققات وصنفرة ودهان ممتازين",
+        "دهانات وديكورات داخلية وخارجية بأحدث تدرجات الألوان العصرية",
+        "معلم نقاشة محترف تسليم على المفتاح مع تناسق ألوان وديكورات",
+        "رسم يدوي على الجدران وتصميمات فاخرة لغرف الصالون والنوم"
+      ],
+      desc: "أرقى تصميمات الدهان الداخلي والخارجي، نقاشة، معالجة رطوبة الحوائط، وورق الحائط بأسعار مناسبة."
+    },
+    ac: {
+      needWorker: [
+        "مطلوب فني صيانة وشحن فريون لمكيف سبليت شارب",
+        "مطلوب تركيب مكيف جديد كاريير 2.25 حصان عاجل",
+        "مطلوب تنظيف فلاتر وغسيل وحدات تكييف خارجية",
+        "مطلوب فني لحل مشكلة تسريب مياه من المكيف داخل الغرفة",
+        "مطلوب صيانة تكييف مركزي متكامل لشركة تجارية",
+        "مطلب فني فك ونقل مكيف من شقة لشقة أخرى"
+      ],
+      needJob: [
+        "فني تكييف متخصص فك وتركيب وصيانة جميع الماركات بالضمان",
+        "تنظيف وغسيل التكييفات بأحدث الأجهزة وإزالة الأتربة والروائح",
+        "شحن فريون أمريكي أصلي مع فحص كامل للتسريبات والكباس",
+        "عقود صيانة سنوية للمكيفات للشركات والمنازل بأسعار مخفضة",
+        "صيانة أعطال الكروت والكمبريسور وتغليف المواسير بكفاءة عالية",
+        "تركيب دكت التكييف المركزي والكونسيلد بمواصفات قياسية ممتازة"
+      ],
+      desc: "صيانة، فك، تركيب، تنظيف، وشحن فريون لجميع أجهزة التكييف الاسبليت والكونسيلد والمركزي."
+    },
+    carp: {
+      needWorker: [
+        "مطلوب نجار لتعديل وتقصير دولاب وتركيب ضلفتين",
+        "مطلوب نجار تركيب أبواب وشبابيك لشقة جديدة",
+        "مطلوب صيانة كوالين وتغيير مفاتيح أبواب منزلية",
+        "مطلوب صنايعي لتركيب أرضية باركيه خشبية لغرفة",
+        "مطلوب تصنيع مطبخ خشبي مودرن مساحة صغيرة",
+        "صيانة كراسي وطاولات خشبية تالفة في قاعة مناسبات"
+      ],
+      needJob: [
+        "نجار أثاث وديكور تصنيع وتعديل وصيانة غرف نوم وصالونات",
+        "تركيب أبواب خشبية وشبابيك وأرضيات باركيه بجودة متناهية",
+        "تصميم وتصنيع مطابخ خشبية مودرن و كلاسيك ومطابخ ألوميتال",
+        "صيانة منزلية لجميع الأبواب والمطابخ والأقفال والكوالين بدقة",
+        "نجار محترف لفك وتركيب أثاث ايكيا ومحلي بكتالوج وبكل سهولة",
+        "معلم نجارة بأسعار ممتازة وتصميمات عصرية تناسب احتياجاتك"
+      ],
+      desc: "جميع أعمال النجارة وصيانة الأثاث، فك وتركيب غرف النوم والمطابخ والأبواب وتصنيع الديكورات الخشبية."
+    },
+    guard: {
+      needWorker: [
+        "مطلوب حارس لعمارة سكنية في طنطا مبيت كامل",
+        "مطلوب حارس أمن لموقع بناء ومستودع مواد حديد",
+        "مطلوب فني لتركيب 4 كاميرات مراقبة خارجية وجهاز تسجيل",
+        "مطلوب حراس شخصيين (بادي جارد) لتأمين مناسبة عائلية",
+        "مطلب تركيب نظام إنذار ضد السرقة والحرائق بالمعرض",
+        "مطلوب حارس أمن لمحل مجوهرات فترة مسائية"
+      ],
+      needJob: [
+        "أفراد حراسة وأمن مؤهلين لتأمين المنشآت والشركات بكفاءة",
+        "حارس مباني وفلل أمين ومستقر مع مبيت وخبرة في التعامل واعي",
+        "تركيب وصيانة كاميرات مراقبة هيكفيجن ودهوا بدقة ممتازة",
+        "تأمين الحفلات والمؤتمرات والمشاهير بحراس مدربين على اليقظة",
+        "توريد وتركيب أحدث أنظمة الإنذار والتحكم بالدخول والخروج Smart",
+        "صيانة كاميرات وأنظمة أمنية مع ربطها بالهاتف بأرخص الأسعار"
+      ],
+      desc: "خدمات أمن وحراسة، كاميرات مراقبة، أنظمة إنذار وحماية ذكية لجميع العقارات والمناسبات والمنشآت."
+    },
+    garden: {
+      needWorker: [
+        "مطلوب عامل لتنسيق وقص حديقة فيلا صغيرة",
+        "مطلوب زراعة نجيل طبيعي وزهور ملونة لمدخل بيت",
+        "مطلوب تصميم وتأسيس شبكة ري بالتنقيط للحديقة",
+        "مطلوب زراعة أشجار مثمرة ونباتات زينة بالحديقة",
+        "قص أشجار نخيل كبيرة وتنظيف الحديقة من الأوراق",
+        "مطلوب تركيب ثيل صناعي مظهر طبيعي للسطوح"
+      ],
+      needJob: [
+        "تنسيق حدائق وزراعة نباتات زينة وشبكات ري أوتوماتيكية متميزة",
+        "صنايعي تركيب نجيل صناعي وطبيعي فائق الجودة والنعومة بالضمان",
+        "قص وقص وتشكيل الأشجار وإبادة الآفات الزراعية وتسميد التربة",
+        "تصميم شلالات ونوافير مائية وديكورات حجرية مذهلة للحدائق",
+        "تنسيق حدائق الأسطح والبلكونات وتركيب الإضاءة الديكورية المضيئة",
+        "مهندس ومزارع تنسيق حدائق بخبرة علمية وعملية لجميع الفلل"
+      ],
+      desc: "أجمل تنسيقات الحدائق وزراعة النجيل والورود، تصميم النوافير وتأسيس شبكات الري الحديثة وصيانة التربة."
+    },
+    chef: {
+      needWorker: [
+        "مطلوب شيف لعمل بوفية غداء وعشاء لعقيقة صغيرة",
+        "مطلوب طباخ يجيد الأكلات الصحية والدايت لبيت عائلة",
+        "مطلوب حلواني لعمل تورتة وأعياد ميلاد ديزاين خاص",
+        "مطلوب طباخة لإعلام وجبات أسبوعية في الفريزر شقة سكنية",
+        "مطلوب معلم طبخ مشويات ومأكولات بحرية ليوم الجمعة",
+        "مطلوب طباخ لمطعم وجبات سريعة بطنطا خبرة"
+      ],
+      needJob: [
+        "شيف محترف للأفراح والعزومات والمناسبات والبوفيهات المفتوحة",
+        "تجهيز جميع أنواع الطبخ البيتي والصحي والتسليم حتى باب البيت",
+        "صناعة الحلويات الشرقية والغربية وتورت المناسبات بأشكال مبهرة",
+        "مستعدة لعمل وجبات يومية وأسبوعية للموظفات بجودة ونظافة بيتية",
+        "طباخ مشويات وشاورما وأكلات شعبية لجميع المناسبات السريعة",
+        "شيف مأكولات بحرية وطواجن بخلطات سرية وأسعار في المتناول"
+      ],
+      desc: "متخصصون في تجهيز بوفيهات الأفراح والعزومات وإعداد الوجبات المنزلية والصحية والحلويات الفاخرة."
+    },
+    labor: {
+      needWorker: [
+        "مطلوب عمال حمالين لتنزيل سيارة حديد وأسمنت عاجل",
+        "مطلوب عمال يومية لمساعدة وصنايعية بموقع إنشائي",
+        "مطلوب شباب نشيط للتحميل والتفريغ بالمخازن بطنطا",
+        "مطلوب عمال لمساعدة في نقل بضائع بمحلات بيع جملة",
+        "مطلوب فني تعبئة وتغليف كرتون بمستودع توزيع مواد غذائية",
+        "مطلوب عمال حفر وتجهيز كابلات أرضية بمجمع سكني"
+      ],
+      needJob: [
+        "عمال حمالين ويومية مستعدين لجميع أعمال المساعدة الشاقة فوراً",
+        "شاب نشيط للعمل بالمخازن والتفريغ والتحميل والترتيب المنظم",
+        "عمالة عامة للمحلات والمطاعم والتنظيف الشامل بجهد ممتاز وأمانة",
+        "شباب خبرة في شحن وتفريغ الحاويات وتغليف الطرود والشحنات المسرعة",
+        "مساعد صنايعي نشيط وأمين للعمل في مختلف مجالات التشطبيات والمواقع",
+        "عمال يومية وساعة للخدمات والمصانع متوفرين بأعداد لجميع المهام"
+      ],
+      desc: "سرعة في توفير عمالة يومية نشطين وأمناء، حمالين، أعمال التحميل والتفريغ ومساعدة شاقة بمختلف المواقع."
+    }
+  };
+
+  let jobCounter = 9;
+
+  CATS.forEach((cat) => {
+    const existing = BASIC_JOBS.filter(j => j.catId === cat.id);
+    const existingCount = existing.length;
+    const needed = 20 - existingCount;
+
+    for (let i = 0; i < needed; i++) {
+      const type = i % 2 === 0 ? "need-worker" : "need-job";
+      const specs = catSpecs[cat.id] || catSpecs["labor"];
+      const titleTemplates = type === "need-worker" ? specs.needWorker : specs.needJob;
+      const title = titleTemplates[i % titleTemplates.length];
+      const sub = cat.subs[i % cat.subs.length];
+      const loc = locations[i % locations.length];
+      const pName = names[i % names.length];
+      const poster = pName.split(" ").map(w => w[0]).join(".");
+      let price = (Math.floor(Math.random() * 15) + 3) * 50;
+      let unit = units[i % units.length];
+
+      if (cat.id === "realestate") {
+        if (sub === "بيع" || sub === "فيلا" || sub === "شقه" || sub === "جميع انواع العقارات") {
+          price = (Math.floor(Math.random() * 45) + 15) * 100000; // 1,500,000 to 6,000,000
+          unit = "إجمالي";
+        } else if (sub === "ايجار" || sub === "مصايف" || sub === "ارضي") {
+          price = (Math.floor(Math.random() * 12) + 4) * 1000; // 4,000 to 16,000
+          unit = sub === "مصايف" ? " / يومي" : " / شهري";
+        } else {
+          price = (Math.floor(Math.random() * 15) + 5) * 2000;
+          unit = " / شهري";
+        }
+      }
+
+      const urgent = Math.random() < 0.15;
+      const age = ages[i % ages.length];
+      const views = Math.floor(Math.random() * 200) + 10;
+      const apps = type === "need-worker" ? Math.floor(Math.random() * 8) : 0;
+      const verified = Math.random() < 0.4;
+      const stars = verified ? parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)) : 0;
+      const statusList: ("active" | "pending" | "completed")[] = ["active", "pending", "completed"];
+      const status = statusList[i % statusList.length];
+
+      result.push({
+        id: jobCounter++,
+        type,
+        title: title.replace("{sub}", sub),
+        catId: cat.id,
+        sub,
+        loc,
+        price,
+        unit,
+        urgent,
+        age,
+        views,
+        apps,
+        poster,
+        pName,
+        verified,
+        stars,
+        desc: specs.desc + ` تخصصنا الدقيق في "${sub}". نهتم بالتفاصيل ورضا العميل هدفنا الأساسي. اتصل بنا الآن أو قدم طلبك عبر شات التطبيق المباشر والمجاني.`,
+        status
+      });
+    }
+  });
+
+  return result;
+};
+
+const JOBS: Job[] = generateFakeJobs();
 
 interface ChatMessage {
   id: number;
@@ -411,9 +748,11 @@ interface JobCardProps {
   job: Job;
   t: ThemeType;
   onClick: () => void;
+  liked?: boolean;
+  onLikeToggle?: (e: React.MouseEvent) => void;
 }
 
-const JobCard = ({job,t,onClick}: JobCardProps)=>{
+const JobCard = ({job,t,onClick,liked,onLikeToggle}: JobCardProps)=>{
   const cat = CATS.find(c=>c.id===job.catId);
   const isWork = job.type==="need-worker";
   const [hov,setHov]=useState(false);
@@ -424,7 +763,9 @@ const JobCard = ({job,t,onClick}: JobCardProps)=>{
         border:`1px solid ${t.border}`,borderRadius:12,
         padding:"14px 14px 12px",marginBottom:8,cursor:"pointer",
         transition:"background 0.15s,box-shadow 0.15s",
-        boxShadow:hov?t.shadow:t.shadowCard,direction:"rtl"}}>
+        boxShadow:hov?t.shadow:t.shadowCard,direction:"rtl",
+        position: "relative"}}
+      id={`job-card-${job.id}`}>
 
       {/* Row 1: title + price */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
@@ -440,12 +781,42 @@ const JobCard = ({job,t,onClick}: JobCardProps)=>{
             </span>
           </div>
         </div>
-        {/* Price */}
-        <div style={{textAlign:"left",flexShrink:0}}>
-          <div style={{color:t.blue,fontSize:16,fontWeight:800,letterSpacing:-0.5,direction:"rtl"}}>
-            {job.price.toLocaleString()} <span style={{fontSize:11,fontWeight:600}}>ج.م</span>
+        {/* Favorite Button & Price Block */}
+        <div style={{display:"flex", gap: 10, alignItems: "center"}}>
+          {onLikeToggle && (
+            <button 
+              id={`job-card-fav-btn-${job.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onLikeToggle(e);
+              }}
+              style={{
+                background: liked ? `${C.red}12` : t.surface,
+                border: `1.5px solid ${liked ? C.red : t.border}`,
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                flexShrink: 0,
+                boxShadow: "0 1.5px 4px rgba(0,0,0,0.06)"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            >
+              <Svg d={ic.heart} s={13} c={liked ? "#EF4444" : t.textMuted} f={liked ? "#EF4444" : "none"} />
+            </button>
+          )}
+
+          <div style={{textAlign:"left",flexShrink:0}}>
+            <div style={{color:t.blue,fontSize:16,fontWeight:800,letterSpacing:-0.5,direction:"rtl"}}>
+              {job.price.toLocaleString()} <span style={{fontSize:11,fontWeight:600}}>ج.م</span>
+            </div>
+            <div style={{color:t.textMuted,fontSize:10,textAlign:"center"}}>{job.unit}</div>
           </div>
-          <div style={{color:t.textMuted,fontSize:10,textAlign:"center"}}>{job.unit}</div>
         </div>
       </div>
 
@@ -474,7 +845,7 @@ const JobCard = ({job,t,onClick}: JobCardProps)=>{
   );
 };
 
-const HorizontalJobCard = ({ job, t, onClick }: JobCardProps) => {
+const HorizontalJobCard = ({ job, t, onClick, liked, onLikeToggle }: JobCardProps) => {
   const cat = CATS.find(c => c.id === job.catId);
   const isWork = job.type === "need-worker";
   const [hov, setHov] = useState(false);
@@ -519,6 +890,38 @@ const HorizontalJobCard = ({ job, t, onClick }: JobCardProps) => {
           {cat?.emoji || "🛠️"}
         </span>
         
+        {/* Favorite Button Overlay on Top-Left */}
+        {onLikeToggle && (
+          <button 
+            id={`horizontal-card-fav-btn-${job.id}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLikeToggle(e);
+            }}
+            style={{
+              position: "absolute",
+              top: 6,
+              left: 6,
+              background: t.elevated,
+              border: `1px solid ${liked ? C.red : t.border}`,
+              width: 26,
+              height: 26,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              transition: "transform 0.15s ease",
+              zIndex: 10,
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+          >
+            <Svg d={ic.heart} s={11} c={liked ? "#EF4444" : t.textMuted} f={liked ? "#EF4444" : "none"} />
+          </button>
+        )}
+
         {/* Urgent Badge */}
         {job.urgent && (
           <span style={{
@@ -618,6 +1021,8 @@ interface HomeScreenProps {
   setCatFilter: (v: string | null) => void;
   subFilter: string | null;
   setSubFilter: (v: string | null) => void;
+  likedJobIds: number[];
+  setLikedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
 }
 
 const HomeScreen = ({
@@ -630,80 +1035,11 @@ const HomeScreen = ({
   catFilter,
   setCatFilter,
   subFilter,
-  setSubFilter
+  setSubFilter,
+  likedJobIds,
+  setLikedJobIds
 }: HomeScreenProps)=>{
   const [filter,setFilter]=useState("all");
-  const [showPriceGuide, setShowPriceGuide] = useState(true);
-
-  // Arabic mapping for selectedLocation
-  const locationArName = selectedLocation === "all" 
-    ? "كل المحافظات" 
-    : (selectedLocation === "tanta" ? "طنطا والغربية" : "القاهرة الكبرى");
-
-  const locationMultiplier = selectedLocation === "all" 
-    ? 1.0 
-    : (selectedLocation === "tanta" ? 0.85 : 1.25);
-
-  // Default professions to compare when no category is selected
-  const defaultProfessions = [
-    { name: "تنظيف", price: 180, id: "clean" },
-    { name: "سباكة", price: 250, id: "plumb" },
-    { name: "كهرباء", price: 220, id: "elec" },
-    { name: "دهانات", price: 230, id: "paint" },
-    { name: "نجارة", price: 240, id: "carp" },
-    { name: "تكييف", price: 300, id: "ac" }
-  ];
-
-  const catSubPrices: Record<string, Record<string, number>> = {
-    clean: { "تنظيف منازل": 220, "مكاتب": 300, "بعد البناء": 450, "خزانات": 350, "سجاد": 150, "واجهات زجاج": 380 },
-    plumb: { "إصلاح تسربات": 240, "تركيب أدوات صحية": 320, "شبكات مياه": 450, "صرف صحي": 280, "سخانات": 190 },
-    elec: { "تمديدات كهربائية": 350, "تركيب إضاءة": 150, "لوحات توزيع": 400, "صيانة أجهزة": 200, "طاقة شمسية": 600 },
-    build: { "ترميم وبناء": 400, "باطون وتشطيبات": 450, "جبسون بورد": 300, "حجر وبلاط": 350, "عزل مائي": 420 },
-    move: { "نقل أثاث": 550, "شحن بضائع": 450, "رافعة هيدروليك": 700, "تخزين": 280, "تغليف": 180 },
-    paint: { "دهان داخلي": 250, "دهان خارجي": 350, "ورق حائط": 200, "ديكور": 300, "عزل حراري": 380 },
-    ac: { "تركيب مكيفات": 350, "صيانة وإصلاح": 250, "شحن فريون": 400, "تنظيف فلاتر": 150, "تكييف مركزي": 800 },
-    carp: { "أثاث خشبي": 300, "مطابخ": 450, "أبواب وشبابيك": 200, "ديكور حديد": 350, "أرضيات باركيه": 400 },
-    guard: { "حراسة مباني": 180, "حارس شخصي": 500, "كاميرات مراقبة": 250, "أنظمة إنذار": 300 },
-    garden: { "تنسيق حدائق": 300, "قص أشجار": 150, "ري أوتوماتيك": 400, "زراعة نباتات": 120 }
-  };
-
-  const currentProfessionName = React.useMemo(() => {
-    if (subFilter) return subFilter;
-    if (catFilter) {
-      return CATS.find(c => c.id === catFilter)?.ar || "المهنة المحددة";
-    }
-    return "كل المهن";
-  }, [catFilter, subFilter]);
-
-  const priceChartData = React.useMemo(() => {
-    // If a category filter is active
-    if (catFilter) {
-      const catObj = CATS.find(c => c.id === catFilter);
-      if (catObj) {
-        const subs = catObj.subs;
-        const pricesObj = catSubPrices[catFilter] || {};
-        return subs.map(subName => {
-          const basePrice = pricesObj[subName] || 200;
-          const adjustedPrice = Math.round((basePrice * locationMultiplier) / 5) * 5;
-          return {
-            name: subName,
-            "متوسط السعر": adjustedPrice,
-            isCurrent: subFilter === subName
-          };
-        });
-      }
-    }
-
-    // Default top-level comparison across categories
-    return defaultProfessions.map(prof => {
-      const adjustedPrice = Math.round((prof.price * locationMultiplier) / 5) * 5;
-      return {
-        name: prof.name,
-        "متوسط السعر": adjustedPrice,
-        isCurrent: false
-      };
-    });
-  }, [catFilter, subFilter, selectedLocation]);
 
   const jobs = jobsList
     .filter(j=>filter==="all"||(filter==="work"&&j.type==="need-worker")||(filter==="job"&&j.type==="need-job"))
@@ -759,17 +1095,6 @@ const HomeScreen = ({
         </div>
       </div>
 
-      {/* ── STATS ROW ── */}
-      <div style={{display:"flex",background:t.surface,borderBottom:`1px solid ${t.border}`}}>
-        {[{v:"١٢٠٠+",l:"إعلان نشط"},{v:"٣٨٠٠+",l:"عامل مسجل"},{v:"٨٩٠+",l:"مهمة منجزة"}].map((s,i)=>(
-          <div key={i} style={{flex:1,padding:"13px 0",textAlign:"center",
-            borderLeft:i>0?`1px solid ${t.border}`:"none"}}>
-            <div style={{color:t.blue,fontSize:14,fontWeight:800,letterSpacing:-0.3}}>{s.v}</div>
-            <div style={{color:t.textMuted,fontSize:10,marginTop:1}}>{s.l}</div>
-          </div>
-        ))}
-      </div>
-
       {/* ── CATEGORIES SCROLL ── */}
       <div style={{paddingTop:16,paddingBottom:4}}>
         <SectionHead title="الفئات" action="عرض الكل" onAction={onCats} t={t}/>
@@ -793,16 +1118,37 @@ const HomeScreen = ({
                 setSubFilter(null);
               }
             }}
-              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
-                padding:"10px 10px",minWidth:70,borderRadius:12,
-                border:`1.5px solid ${catFilter===c.id?C.blue:t.border}`,
-                background:catFilter===c.id?t.blueBg:t.card,
-                cursor:"pointer",flexShrink:0,transition:"all 0.15s"}}>
-              <span style={{fontSize:20}}>{c.emoji}</span>
-              <span style={{color:catFilter===c.id?t.blue:t.textSec,
-                fontSize:10,fontWeight:catFilter===c.id?700:500,
-                direction:"rtl",textAlign:"center",whiteSpace:"nowrap"}}>{c.ar}</span>
-              <span style={{color:t.textMuted,fontSize:9}}>{c.count}</span>
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 4,
+                padding: "8px 4px",
+                width: 68,
+                height: 68,
+                borderRadius: 12,
+                border: `1.5px solid ${catFilter===c.id?C.blue:t.border}`,
+                background: catFilter===c.id?t.blueBg:t.card,
+                cursor: "pointer",
+                flexShrink: 0,
+                transition: "all 0.15s",
+                boxShadow: catFilter===c.id ? `0 2px 8px ${C.blue}22` : "none"
+              }}>
+              <span style={{fontSize:18}}>{c.emoji}</span>
+              <span style={{
+                color: catFilter===c.id?t.blue:t.textSec,
+                fontSize: 8.5,
+                fontWeight: catFilter===c.id?800:600,
+                lineHeight: 1.1,
+                direction: "rtl",
+                textAlign: "center",
+                wordBreak: "break-word",
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical"
+              }}>{c.ar}</span>
             </button>
           ))}
         </div>
@@ -889,177 +1235,6 @@ const HomeScreen = ({
         ))}
       </div>
 
-      {/* ── PRICE INDEX CHART ── */}
-      <div style={{
-        padding: "0 12px 10px",
-        direction: "rtl"
-      }}>
-        <div style={{
-          background: t.card,
-          border: `1.5px solid ${t.border}`,
-          borderRadius: 14,
-          padding: "14px 16px",
-          display: "flex",
-          flexDirection: "column"
-        }}>
-          {/* Header */}
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            cursor: "pointer"
-          }} onClick={() => setShowPriceGuide(!showPriceGuide)}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 16 }}>📈</span>
-                <span style={{ color: t.text, fontSize: 13, fontWeight: 800 }}>
-                  دليل أسعار الخدمات الاسترشادي
-                </span>
-                <span style={{
-                  background: t.blueBg,
-                  color: C.blue,
-                  fontSize: 9,
-                  fontWeight: 700,
-                  padding: "2px 6px",
-                  borderRadius: 6
-                }}>
-                  {locationArName}
-                </span>
-              </div>
-              <p style={{ color: t.textMuted, fontSize: 10, margin: "3px 0 0", textAlign: "right" }}>
-                معدل أسعار مهنة <strong style={{ color: C.blue, fontWeight: 800 }}>{currentProfessionName}</strong> (جنيه مصري / باليومية أو بالعملية)
-              </p>
-            </div>
-            <button style={{
-              background: "none",
-              border: "none",
-              color: C.blue,
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 2
-            }}>
-              {showPriceGuide ? "إخفاء ▲" : "عرض التفاصيل ▼"}
-            </button>
-          </div>
-
-          {showPriceGuide && (
-            <div style={{ marginTop: 14, animation: "fadeIn 0.25s" }}>
-              {/* Interactive Info tip */}
-              <div style={{
-                background: t.surface,
-                borderRadius: 8,
-                padding: "8px 10px",
-                fontSize: 10,
-                color: t.textSec,
-                marginBottom: 12,
-                textAlign: "right",
-                lineHeight: 1.4,
-                borderRight: `3px solid ${C.blue}`
-              }}>
-                ℹ️ الأسعار المعروضة استرشادية لمساعدتك في التقديم أو طلب المحترفين. اضغط على أي تخصص لتنشيط التصفية مباشرة!
-              </div>
-
-              {/* Chart container */}
-              <div style={{ width: "100%", height: 140, direction: "ltr" }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={priceChartData} 
-                    margin={{ top: 8, right: 5, left: -25, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)"} vertical={false} />
-                    <XAxis 
-                      dataKey="name" 
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fill: t.textMuted, fontSize: 8, fontWeight: 600 }}
-                    />
-                    <YAxis 
-                      tickLine={false}
-                      axisLine={false}
-                      tick={{ fill: t.textMuted, fontSize: 8 }}
-                    />
-                    <Tooltip 
-                      cursor={{ fill: dark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          const isHighlighted = catFilter 
-                            ? subFilter === data.name 
-                            : catFilter === CATS.find(c => c.ar === data.name)?.id;
-                          return (
-                            <div style={{
-                              background: t.surface,
-                              border: `1.5px solid ${isHighlighted ? C.blue : t.border}`,
-                              borderRadius: 8,
-                              padding: "6px 8px",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                              direction: "rtl",
-                              textAlign: "right"
-                            }}>
-                              <div style={{ color: t.text, fontSize: 10, fontWeight: 800 }}>{data.name}</div>
-                              <div style={{ color: C.blue, fontSize: 10, fontWeight: 700, marginTop: 2 }}>
-                                💰 متوسط التكلفة: {data["متوسط السعر"]} ج.م
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar 
-                      dataKey="متوسط السعر" 
-                      radius={[4, 4, 0, 0]} 
-                      maxBarSize={30} 
-                      style={{ cursor: "pointer" }}
-                      onClick={(data: any) => {
-                        if (data && data.name) {
-                          if (catFilter) {
-                            setSubFilter(subFilter === data.name ? null : data.name);
-                          } else {
-                            const foundCat = CATS.find(c => c.ar === data.name);
-                            if (foundCat) {
-                              setCatFilter(foundCat.id);
-                            }
-                          }
-                        }
-                      }}
-                    >
-                      {priceChartData.map((entry, index) => {
-                        const isHighlightSub = subFilter !== null;
-                        const isSelectedBar = catFilter 
-                          ? subFilter === entry.name 
-                          : catFilter === CATS.find(c => c.ar === entry.name)?.id;
-                        
-                        let barColor = C.blue;
-                        if (catFilter) {
-                          if (isHighlightSub) {
-                            barColor = isSelectedBar ? C.blue : (dark ? "rgba(255,255,255,0.1)" : "#E4E7EB");
-                          } else {
-                            barColor = C.blue;
-                          }
-                        } else {
-                          barColor = C.blue;
-                        }
-
-                        return (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={barColor} 
-                          />
-                        );
-                      })}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* ── LISTINGS ── */}
       <div style={{padding:"4px 12px 24px"}}>
         {jobs.length === 0 ? (
@@ -1076,7 +1251,14 @@ const HomeScreen = ({
                 <span style={{ color: t.textMuted, fontSize: 11 }}>تصفية نشطة ⚡</span>
               </div>
               {jobs.map(j => (
-                <JobCard key={j.id} job={j} t={t} onClick={() => onJob(j)} />
+                <JobCard 
+                  key={j.id} 
+                  job={j} 
+                  t={t} 
+                  onClick={() => onJob(j)} 
+                  liked={likedJobIds.includes(j.id)}
+                  onLikeToggle={() => setLikedJobIds(prev => prev.includes(j.id) ? prev.filter(id => id !== j.id) : [...prev, j.id])}
+                />
               ))}
             </div>
           ) : (
@@ -1112,7 +1294,13 @@ const HomeScreen = ({
                     }}>
                       {latestJobs.map(j => (
                         <div key={j.id} style={{ scrollSnapAlign: "start" }}>
-                          <HorizontalJobCard job={j} t={t} onClick={() => onJob(j)} />
+                          <HorizontalJobCard 
+                            job={j} 
+                            t={t} 
+                            onClick={() => onJob(j)} 
+                            liked={likedJobIds.includes(j.id)}
+                            onLikeToggle={() => setLikedJobIds(prev => prev.includes(j.id) ? prev.filter(id => id !== j.id) : [...prev, j.id])}
+                          />
                         </div>
                       ))}
                     </div>
@@ -1139,6 +1327,8 @@ interface CategoriesScreenProps {
   setTab: (v: string) => void;
   jobsList: Job[];
   onJob: (job: Job) => void;
+  likedJobIds: number[];
+  setLikedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
 }
 
 const CategoriesScreen = ({
@@ -1149,7 +1339,9 @@ const CategoriesScreen = ({
   setSubFilter,
   setTab,
   jobsList,
-  onJob
+  onJob,
+  likedJobIds,
+  setLikedJobIds
 }: CategoriesScreenProps)=>{
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
@@ -1354,6 +1546,8 @@ const CategoriesScreen = ({
                 job={job} 
                 t={t} 
                 onClick={() => onJob(job)} 
+                liked={likedJobIds.includes(job.id)}
+                onLikeToggle={() => setLikedJobIds(prev => prev.includes(job.id) ? prev.filter(id => id !== job.id) : [...prev, job.id])}
               />
             ))
           )}
@@ -1472,6 +1666,111 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
   const [contact,setContact]=useState("both");
   const [done,setDone]=useState(false);
 
+  // Photo choosing & Camera snapshot states
+  const [images, setImages] = useState<string[]>([]);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const startCamera = async () => {
+    setCameraActive(true);
+    setCameraError(null);
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("الكاميرا غير مدعومة في متصفحك الحالي.");
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      console.error("Camera access error:", err);
+      setCameraError(
+        err.name === "NotAllowedError" || err.name === "PermissionDeniedError"
+          ? "تم رفض الوصول للكاميرا. يمكنك رفع صورة أو توليد صورة تجريبية."
+          : "لم يتم التعرف على كاميرا نشطة. يمكنك رفع صورة أو توليد صورة تجريبية."
+      );
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+    setCameraError(null);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      try {
+        const video = videoRef.current;
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          setImages(prev => [...prev, dataUrl]);
+          stopCamera();
+        }
+      } catch (e) {
+        simulatePhoto();
+      }
+    } else {
+      simulatePhoto();
+    }
+  };
+
+  const simulatePhoto = () => {
+    const placeholders: Record<string, string> = {
+      realestate: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80",
+      clean: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=400&q=80",
+      plumb: "https://images.unsplash.com/photo-1542013936693-8848e574047a?auto=format&fit=crop&w=400&q=80",
+      elec: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80",
+      paint: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=400&q=80",
+      carp: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=400&q=80",
+      move: "https://images.unsplash.com/photo-1603796846097-bee99e4a60c9?auto=format&fit=crop&w=400&q=80",
+      ac: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=400&q=80"
+    };
+    const defaultImg = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80";
+    const chosenUrl = placeholders[cat || ""] || defaultImg;
+    const finalUrl = `${chosenUrl}&sig=${Date.now()}-${Math.floor(Math.random()*1000)}`;
+    setImages(prev => [...prev, finalUrl]);
+    stopCamera();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files) as Blob[];
+      filesArray.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === "string") {
+            setImages(prev => [...prev, reader.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
   const handlePublish = () => {
     if(!valid) return;
     
@@ -1497,6 +1796,7 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
       desc: desc || "لا يوجد وصف تفصيلي لهذا الإعلان.",
       ratingCount: 1,
       ratingsList: [5],
+      images: images.length > 0 ? images : undefined,
     };
 
     onAddJob(newJob);
@@ -1534,7 +1834,7 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
       <p style={{color:t.textMuted,fontSize:13,maxWidth:260,lineHeight:1.6,margin:"0 0 24px"}}>
         سيتواصل معك المهنيون قريباً. يمكنك متابعة الإعلان من صفحة إعلاناتي.
       </p>
-      <button onClick={()=>{setDone(false);setTitle("");setDesc("");setPrice("");setCat(null);setLoc("");}}
+      <button onClick={()=>{setDone(false);setTitle("");setDesc("");setPrice("");setCat(null);setLoc("");setImages([]);}}
         style={{background:C.blue,border:"none",color:"#fff",borderRadius:10,
           padding:"12px 28px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
         نشر إعلان آخر
@@ -1627,15 +1927,285 @@ const PostScreen = ({t, onAddJob, profile}: PostScreenProps)=>{
           style={inp()} onFocus={foc} onBlur={blr}/>
       </div>
 
-      {/* Photo upload */}
-      <div style={{marginBottom:14}}>
+      {/* Photo upload & Camera Capture */}
+      <div style={{marginBottom:18}} id="post-images-section">
         <label style={lbl}>صور الإعلان</label>
-        <div style={{border:`1.5px dashed ${t.borderMed}`,borderRadius:11,
-          padding:"20px",textAlign:"center",background:t.card,cursor:"pointer"}}>
-          <Svg d={ic.cam} s={26} c={t.textMuted}/>
-          <div style={{color:t.textMuted,fontSize:12,marginTop:8}}>اضغط لإضافة صور</div>
-          <div style={{color:t.textHint,fontSize:10,marginTop:3}}>JPG · PNG · حتى 5MB لكل صورة</div>
-        </div>
+        
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          style={{display: "none"}} 
+          multiple 
+          accept="image/*" 
+          onChange={handleFileUpload} 
+        />
+
+        {cameraActive ? (
+          <div style={{
+            background: "#0d0f14",
+            border: `2px solid ${C.blue}`,
+            borderRadius: 14,
+            padding: 10,
+            overflow: "hidden",
+            position: "relative",
+            marginBottom: 12,
+            boxShadow: `0 4px 20px ${C.blue}22`
+          }}>
+            {cameraError ? (
+              <div style={{padding: "20px 14px", textAlign: "center", direction: "rtl"}}>
+                <span style={{fontSize: 24, display: "block", marginBottom: 8}}>⚠️</span>
+                <p style={{color: "#FCA5A5", fontSize: 12, margin: "0 0 12px", lineHeight: 1.6}}>{cameraError}</p>
+                <div style={{display: "flex", gap: 8, justifyContent: "center"}}>
+                  <button 
+                    onClick={simulatePhoto}
+                    style={{
+                      background: C.blue, border: "none", color: "#fff",
+                      borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer"
+                    }}
+                  >
+                    توليد صورة نموذجية
+                  </button>
+                  <button 
+                    onClick={stopCamera}
+                    style={{
+                      background: "rgba(255,255,255,0.15)", border: "none", color: "#fff",
+                      borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer"
+                    }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {/* Viewfinder Frame */}
+                <div style={{
+                  position: "relative",
+                  width: "100%",
+                  height: 200,
+                  background: "#000",
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    style={{width: "100%", height: "100%", objectFit: "cover"}}
+                  />
+                  
+                  {/* Grid Lines Overlay */}
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                    border: "1px dashed rgba(255,255,255,0.15)", pointerEvents: "none",
+                    display: "flex"
+                  }}>
+                    <div style={{flex: 1, borderRight: "1px dashed rgba(255,255,255,0.15)"}} />
+                    <div style={{flex: 1, borderRight: "1px dashed rgba(255,255,255,0.15)"}} />
+                  </div>
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                    display: "flex", flexDirection: "column", pointerEvents: "none"
+                  }}>
+                    <div style={{flex: 1, borderBottom: "1px dashed rgba(255,255,255,0.15)"}} />
+                    <div style={{flex: 1, borderBottom: "1px dashed rgba(255,255,255,0.15)"}} />
+                  </div>
+
+                  {/* Red Recording Dot */}
+                  <div style={{
+                    position: "absolute", top: 12, right: 12,
+                    display: "flex", alignItems: "center", gap: 5,
+                    background: "rgba(0,0,0,0.6)", padding: "4px 8px", borderRadius: 20
+                  }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: "50%", background: "#EF4444"
+                    }} />
+                    <span style={{color: "#fff", fontSize: 9, fontWeight: 700, fontFamily: "monospace"}}>LIVE</span>
+                  </div>
+                </div>
+
+                {/* Shutter controls */}
+                <div style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "10px 4px 2px", direction: "rtl"
+                }}>
+                  <button 
+                    onClick={stopCamera}
+                    style={{
+                      background: "rgba(239, 68, 68, 0.15)", border: `1px solid ${C.red}44`,
+                      color: "#F87171", borderRadius: 8, padding: "8px 16px",
+                      fontSize: 12, fontWeight: 700, cursor: "pointer"
+                    }}
+                  >
+                    إلغاء ✕
+                  </button>
+
+                  {/* Outer Shutter Ring */}
+                  <button 
+                    onClick={capturePhoto}
+                    style={{
+                      width: 48, height: 48, borderRadius: "50%", background: "#fff",
+                      border: `4px solid ${C.blue}`, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      boxShadow: "0 0 12px rgba(255,255,255,0.3)",
+                      transition: "transform 0.1s"
+                    }}
+                  >
+                    <div style={{width: 30, height: 30, borderRadius: "50%", background: C.blue}} />
+                  </button>
+
+                  <button 
+                    onClick={simulatePhoto}
+                    style={{
+                      background: "rgba(255,255,255,0.1)", border: "none",
+                      color: "#E2E8F0", borderRadius: 8, padding: "8px 12px",
+                      fontSize: 11, fontWeight: 600, cursor: "pointer"
+                    }}
+                  >
+                    صورة تمثيلية ⚡
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            background: t.card,
+            border: `1.5px dashed ${t.borderMed}`,
+            borderRadius: 14,
+            padding: "20px 14px",
+            textAlign: "center"
+          }}>
+            <div style={{
+              display: "flex", justifyContent: "center", gap: 20, marginBottom: 12, direction: "rtl"
+            }}>
+              {/* Option 1: Live Camera */}
+              <button 
+                id="camera-capture-btn"
+                onClick={startCamera}
+                style={{
+                  flex: 1, background: t.surface, border: `1px solid ${t.border}`,
+                  borderRadius: 12, padding: "14px 10px", cursor: "pointer",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                  transition: "all 0.15s ease"
+                }}
+              >
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%", background: t.blueBg,
+                  display: "flex", alignItems: "center", justifyContent: "center"
+                }}>
+                  <Svg d={ic.cam} s={20} c={C.blue} />
+                </div>
+                <span style={{color: t.text, fontSize: 12, fontWeight: 700}}>التقاط من الكاميرا</span>
+                <span style={{color: t.textMuted, fontSize: 9}}>تصوير فوري للعمل</span>
+              </button>
+
+              {/* Option 2: Upload Files */}
+              <button 
+                id="file-upload-btn"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  flex: 1, background: t.surface, border: `1px solid ${t.border}`,
+                  borderRadius: 12, padding: "14px 10px", cursor: "pointer",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                  transition: "all 0.15s ease"
+                }}
+              >
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%", background: t.blueBg,
+                  display: "flex", alignItems: "center", justifyContent: "center"
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </div>
+                <span style={{color: t.text, fontSize: 12, fontWeight: 700}}>رفع من الألبوم</span>
+                <span style={{color: t.textMuted, fontSize: 9}}>اختر صوراً مخزنة</span>
+              </button>
+            </div>
+
+            <div 
+              onClick={simulatePhoto}
+              style={{
+                background: t.blueBg, border: `1px solid ${t.blueBorder}`,
+                borderRadius: 10, padding: "8px 12px", display: "inline-flex",
+                alignItems: "center", gap: 6, cursor: "pointer", transition: "all 0.15s"
+              }}
+            >
+              <span style={{fontSize: 12}}>⚡</span>
+              <span style={{color: C.blue, fontSize: 11, fontWeight: 700}}>توليد صور ذكية لقسم {CATS.find(c=>c.id===cat)?.ar || "الإعلان"}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Previews Frame */}
+        {images.length > 0 && (
+          <div style={{marginTop: 12, direction: "rtl"}}>
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              marginBottom: 6, padding: "0 2px"
+            }}>
+              <span style={{color: t.text, fontSize: 11, fontWeight: 700}}>الصور المختارة ({images.length})</span>
+              <button 
+                onClick={() => setImages([])}
+                style={{background: "none", border: "none", color: C.red, fontSize: 10, fontWeight: 700, cursor: "pointer"}}
+              >
+                حذف الكل
+              </button>
+            </div>
+
+            <div style={{
+              display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6,
+              scrollSnapType: "x mandatory", overflowY: "hidden"
+            }}>
+              {images.map((img, idx) => (
+                <div key={idx} style={{
+                  width: 76, height: 76, borderRadius: 10,
+                  border: `1.5px solid ${t.border}`, position: "relative",
+                  flexShrink: 0, scrollSnapAlign: "start", background: "#f0f0f0",
+                  overflow: "hidden"
+                }}>
+                  <img 
+                    src={img} 
+                    alt={`Preview ${idx + 1}`}
+                    style={{width: "100%", height: "100%", objectFit: "cover"}}
+                    referrerPolicy="no-referrer"
+                  />
+                  
+                  {/* Delete Button overlay on Top-Right */}
+                  <button 
+                    onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                    style={{
+                      position: "absolute", top: 4, right: 4,
+                      width: 18, height: 18, borderRadius: "50%",
+                      background: "rgba(220, 38, 38, 0.85)", border: "none",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: "pointer", color: "#fff", padding: 0,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+                    }}
+                  >
+                    <Svg d={ic.x} s={10} c="#ffffff" sw={3} />
+                  </button>
+
+                  {/* Thumbnail Number Badge */}
+                  <div style={{
+                    position: "absolute", bottom: 4, left: 4,
+                    background: "rgba(0,0,0,0.6)", color: "#fff",
+                    borderRadius: 4, padding: "1px 4px", fontSize: 8, fontWeight: 700
+                  }}>
+                    {idx + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Toggles */}
@@ -2074,97 +2644,33 @@ const JobDetail=({
           ))}
         </div>
 
-        {/* ── Mini Map Card ── */}
-        <div style={{background:t.card,border:`1px solid ${t.border}`,
-          borderRadius:12,padding:"14px",marginBottom:12}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{color:t.textSec,fontSize:11,fontWeight:600}}>الإحداثيات التقريبية للموقع</span>
-            <span style={{color:t.text,fontSize:13,fontWeight:700}}>خريطة المنطقة</span>
-          </div>
-          
-          <div style={{height:140,borderRadius:10,background:dark?"#111B2C":"#E0E5EC",
-            position:"relative",overflow:"hidden",border:`1px solid ${t.border}`}}>
-            
-            {/* Simulated layout grids / streets */}
-            <svg width="100%" height="100%" style={{position:"absolute",top:0,left:0,opacity:dark?0.35:0.65}}>
-              {/* Rivers or major highways */}
-              <path d="M-20,40 Q150,80 300,50" stroke={dark?"#1E3A5F":"#93C5FD"} strokeWidth="12" fill="none" />
-              <path d="M120,-20 Q180,60 220,180" stroke={dark?"#2A4E7F":"#BFDBFE"} strokeWidth="8" fill="none" />
-              
-              {/* Streets */}
-              <line x1="0" y1="20" x2="480" y2="20" stroke={dark?"#1D2A44":"#F3F4F6"} strokeWidth="5" />
-              <line x1="0" y1="100" x2="480" y2="100" stroke={dark?"#1D2A44":"#F3F4F6"} strokeWidth="4" />
-              <line x1="60" y1="0" x2="60" y2="140" stroke={dark?"#1D2A44":"#F3F4F6"} strokeWidth="4" />
-              <line x1="240" y1="0" x2="240" y2="140" stroke={dark?"#1D2A44":"#F3F4F6"} strokeWidth="5" />
-              
-              {/* Minor streets */}
-              <line x1="0" y1="65" x2="480" y2="65" stroke={dark?"#18233C":"#E5E7EB"} strokeWidth="1.5" strokeDasharray="4,4" />
-              <line x1="160" y1="0" x2="160" y2="140" stroke={dark?"#18233C":"#E5E7EB"} strokeWidth="1.5" />
-            </svg>
-            
-            {/* Animated Radar Pulse around Marker */}
+        {/* Ad Images Gallery */}
+        {job.images && job.images.length > 0 && (
+          <div style={{marginBottom:18}} id="ad-detail-gallery">
+            <div style={{color:t.textSec,fontSize:12,fontWeight:600,
+              marginBottom:8,letterSpacing:0.4}}>الصور المرفقة بالإعلان</div>
             <div style={{
-              position:"absolute",top:"50%",left:"50%",transform:"translate(-50%, -50%)",
-              display:"flex",alignItems:"center",justifyContent:"center"
+              display:"flex",gap:10,overflowX:"auto",paddingBottom:6,
+              scrollSnapType:"x mandatory",overflowY:"hidden"
             }}>
-              {/* Outer pulsing ring */}
-              <div style={{
-                position:"absolute",width:46,height:46,borderRadius:"50%",
-                background:`${C.blue}20`,border:`1.5px solid ${C.blue}`,
-              }} className="animate-ping" />
-              
-              {/* Inner rotating dashed compass grid */}
-              <div style={{
-                position:"absolute",width:80,height:80,borderRadius:"50%",
-                background:`${C.blue}08`,border:`1px dashed ${C.blue}44`,
-              }} className="animate-spin" />
-              
-              {/* Pin Marker */}
-              <div style={{
-                position:"absolute",transform:"translateY(-12px)",zIndex:10,
-                filter:"drop-shadow(0 4px 6px rgba(0,0,0,0.3))"
-              }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2C8.13 2 5 5.13 5 9C5 13.5 12 22 12 22C12 22 19 13.5 19 9C19 5.13 15.87 2 12 2Z" fill={C.blue} stroke="#ffffff" strokeWidth="1.5"/>
-                  <circle cx="12" cy="9" r="3.5" fill="#ffffff" />
-                </svg>
-              </div>
-            </div>
-            
-            {/* Map Controls Overlay */}
-            <div style={{position:"absolute",top:8,right:8,display:"flex",flexDirection:"column",gap:4}}>
-              <button style={{width:24,height:24,borderRadius:4,background:t.elevated,color:t.text,
-                border:`1px solid ${t.border}`,fontSize:14,fontWeight:700,cursor:"pointer",
-                display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
-              <button style={{width:24,height:24,borderRadius:4,background:t.elevated,color:t.text,
-                border:`1px solid ${t.border}`,fontSize:14,fontWeight:700,cursor:"pointer",
-                display:"flex",alignItems:"center",justifyContent:"center"}}>-</button>
-            </div>
-            
-            {/* Location badge on map */}
-            <div style={{position:"absolute",top:8,left:8,background:"rgba(11, 17, 32, 0.75)",
-              backdropFilter:"blur(4px)",padding:"3px 8px",borderRadius:6,border:"1px solid rgba(255,255,255,0.15)"}}>
-              <span style={{color:"#fff",fontSize:10,fontWeight:600}}>{job.loc}</span>
-            </div>
-            
-            {/* Compass scale layout */}
-            <div style={{position:"absolute",bottom:8,left:8,background:"rgba(11, 17, 32, 0.65)",
-              padding:"2px 6px",borderRadius:4,color:"#fff",fontSize:8,fontFamily:"monospace"}}>
-              {job.loc.includes("طنطا") ? "30.788° N, 31.001° E" : job.loc.includes("أكتوبر") ? "29.972° N, 30.949° E" : "30.026° N, 31.491° E"}
+              {job.images.map((imgUrl, i) => (
+                <div key={i} style={{
+                  width:180,height:120,borderRadius:10,
+                  border:`1.5px solid ${t.border}`,overflow:"hidden",
+                  flexShrink:0,scrollSnapAlign:"start",background:t.card,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+                }}>
+                  <img 
+                    src={imgUrl} 
+                    alt={`Ad image ${i+1}`}
+                    style={{width:"100%",height:"100%",objectFit:"cover"}}
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ))}
             </div>
           </div>
-          
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,direction:"rtl"}}>
-            <span style={{color:t.textMuted,fontSize:11}}>
-              دقة التقريب: نصف قطر ١٠٠م من {job.loc}
-            </span>
-            <button style={{background:"none",border:"none",color:C.blue,fontSize:11,fontWeight:700,
-              cursor:"pointer",display:"flex",alignItems:"center",gap:3,padding:0}}>
-              رؤية في خرائط Google
-              <Svg d={ic.share} s={11} c={C.blue}/>
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Description */}
         <div style={{marginBottom:12}}>
@@ -4216,8 +4722,8 @@ export default function App(){
       appliedJobIds={appliedJobIds}
       setAppliedJobIds={setAppliedJobIds}/>;
     switch(tab){
-      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter}/>;
-      case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab} jobsList={jobsList} onJob={setJob}/>;
+      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
+      case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab} jobsList={jobsList} onJob={setJob} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
       case"post":   return <PostScreen t={t} onAddJob={handleAddJob} profile={profile}/>;
       case"chats":  return <ChatsScreen t={t} dark={dark}/>;
       case"profile":return <ProfileScreen 
@@ -4241,7 +4747,7 @@ export default function App(){
         setNotifSettings={setNotifSettings}
         isLoggedOut={isLoggedOut}
         setIsLoggedOut={setIsLoggedOut}/>;
-      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter}/>;
+      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
     }
   };
 
