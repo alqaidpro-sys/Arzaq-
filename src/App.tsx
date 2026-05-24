@@ -128,6 +128,15 @@ interface Job {
   images?: string[];
 }
 
+interface AdBanner {
+  id: string;
+  title: string;
+  desc: string;
+  imgUrl: string;
+  linkText: string;
+  tag: string;
+}
+
 interface Category {
   id: string;
   ar: string;
@@ -740,6 +749,379 @@ const SectionHead = ({title,action,onAction,t}: SectionHeadProps)=>(
   </div>
 );
 
+/* ── AD SPACE COMPONENT ───────────────────────────── */
+interface AdSpaceProps {
+  ad: AdBanner;
+  t: ThemeType;
+  onEdit: () => void;
+  small?: boolean;
+}
+
+const AdSpace = ({ ad, t, onEdit, small }: AdSpaceProps) => {
+  return (
+    <div style={{
+      margin: small ? "4px 16px 14px" : "12px 16px",
+      background: t.card,
+      border: `1.5px solid ${t.border}`,
+      borderRadius: 14,
+      padding: small ? "11px 13px" : "14px 16px",
+      position: "relative",
+      boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+      overflow: "hidden",
+      direction: "rtl"
+    }}>
+      {/* Edit Gear Button */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+        title="تنسيق وتحكيم الإعلان"
+        style={{
+          position: "absolute",
+          top: 8,
+          left: 8,
+          background: t.surface,
+          border: `1px solid ${t.border}`,
+          borderRadius: 8,
+          width: 28,
+          height: 28,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 10,
+          color: t.textSec,
+          transition: "all 0.15s ease",
+          fontSize: 12
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = t.blueBg}
+        onMouseLeave={(e) => e.currentTarget.style.background = t.surface}
+      >
+        ⚙️
+      </button>
+
+      {/* Ad Tag Badge */}
+      <div style={{
+        position: "absolute",
+        top: small ? 8 : 12,
+        right: small ? 8 : 12,
+        background: "rgba(14, 165, 233, 0.08)",
+        color: C.blue,
+        border: `1px solid rgba(14, 165, 233, 0.12)`,
+        borderRadius: 6,
+        padding: "2px 7px",
+        fontSize: 9,
+        fontWeight: 800,
+        zIndex: 5
+      }}>
+        {ad.tag || "إعلان ممول"}
+      </div>
+
+      {/* Grid Content */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        marginTop: small ? 14 : 18,
+        direction: "rtl"
+      }}>
+        {/* Text Area */}
+        <div style={{ flex: 1, textAlign: "right", minWidth: 0 }}>
+          <h4 style={{
+            color: t.text,
+            fontSize: small ? 12 : 14,
+            fontWeight: 800,
+            margin: "0 0 4px",
+            lineHeight: 1.3,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis"
+          }}>
+            {ad.title}
+          </h4>
+          <p style={{
+            color: t.textSec,
+            fontSize: small ? 10.5 : 12,
+            lineHeight: 1.45,
+            margin: "0 0 8px",
+            display: "-webkit-box",
+            WebkitLineClamp: small ? 1 : 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden"
+          }}>
+            {ad.desc}
+          </p>
+          <span style={{
+            color: C.blue,
+            fontSize: small ? 10 : 11,
+            fontWeight: 700,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4
+          }}>
+            {ad.linkText || "عرض الخدمة ⚡"}
+            <span>←</span>
+          </span>
+        </div>
+
+        {/* Ad Image */}
+        {ad.imgUrl && (
+          <div style={{
+            width: small ? 58 : 74,
+            height: small ? 58 : 74,
+            borderRadius: 10,
+            overflow: "hidden",
+            flexShrink: 0,
+            border: `1.5px solid ${t.border}`,
+            background: t.surface
+          }}>
+            <img 
+              src={ad.imgUrl} 
+              alt={ad.title}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── AD GOVERNANCE MODAL ───────────────────────── */
+interface AdGovernanceModalProps {
+  adId: string;
+  t: ThemeType;
+  adsConfig: Record<string, AdBanner>;
+  onClose: () => void;
+  onSave: (adId: string, updatedAd: AdBanner) => void;
+}
+
+const AdGovernanceModal = ({ adId, t, adsConfig, onClose, onSave }: AdGovernanceModalProps) => {
+  const currentAd = adsConfig[adId] || {
+    id: adId,
+    title: "",
+    desc: "",
+    imgUrl: "",
+    linkText: "",
+    tag: ""
+  };
+
+  const [title, setTitle] = useState(currentAd.title);
+  const [desc, setDesc] = useState(currentAd.desc);
+  const [imgUrl, setImgUrl] = useState(currentAd.imgUrl);
+  const [linkText, setLinkText] = useState(currentAd.linkText);
+  const [tag, setTag] = useState(currentAd.tag);
+
+  // Suggested high quality stock images relevant to Egypt workers/services
+  const suggestions = [
+    { name: "مقاولات وبناء", url: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=400&q=80" },
+    { name: "ديكور وتشطيب", url: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80" },
+    { name: "نظافة وبيئة", url: "https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?auto=format&fit=crop&w=400&q=80" },
+    { name: "سباكة وصيانة", url: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80" },
+    { name: "أثاث ونقل", url: "https://images.unsplash.com/photo-1532413991361-404722067b33?auto=format&fit=crop&w=400&q=80" }
+  ];
+
+  return (
+    <div style={{
+      position: "absolute",
+      top: 0, left: 0, right: 0, bottom: 0,
+      background: "rgba(0,0,0,0.65)",
+      backdropFilter: "blur(3px)",
+      zIndex: 2000,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-end",
+      fontFamily: "inherit"
+    }}>
+      {/* Click outside to close */}
+      <div onClick={onClose} style={{ flex: 1 }} />
+
+      <div style={{
+        background: t.surface,
+        borderTop: `1.5px solid ${t.border}`,
+        borderTopRightRadius: 20,
+        borderTopLeftRadius: 20,
+        padding: "20px 16px 24px",
+        direction: "rtl",
+        boxShadow: "0 -8px 25px rgba(0,0,0,0.2)",
+        maxHeight: "90%",
+        overflowY: "auto",
+        zIndex: 2001,
+        animation: "fadeIn 0.15s ease-out"
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <span style={{
+              background: "rgba(14, 165, 233, 0.1)",
+              color: C.blue,
+              fontSize: 10,
+              fontWeight: 800,
+              padding: "2px 8px",
+              borderRadius: 6,
+              display: "inline-block",
+              marginBottom: 4
+            }}>
+              بوابة تحكيم الإعلانات ⚙️
+            </span>
+            <h3 style={{ color: t.text, fontSize: 15, fontWeight: 900, margin: 0 }}>
+              تعديل الإعلان في هذه المساحة
+            </h3>
+          </div>
+          <button 
+            onClick={onClose}
+            style={{
+              background: t.card, border: `1px solid ${t.border}`, borderRadius: 9,
+              width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", color: t.textSec
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Inputs */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+          {/* Title */}
+          <div>
+            <label style={{ display: "block", color: t.textSec, fontSize: 11, fontWeight: 700, marginBottom: 5 }}>عنوان الإعلان:</label>
+            <input 
+              type="text" 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              placeholder="مثال: شركة النخبة للمبيعات والمقاولات"
+              style={{
+                width: "100%", background: t.card, border: `1.5px solid ${t.border}`,
+                borderRadius: 10, padding: 10, color: t.text, fontSize: 12.5, outline: "none", boxSizing: "border-box"
+              }}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label style={{ display: "block", color: t.textSec, fontSize: 11, fontWeight: 700, marginBottom: 5 }}>الوصف الإعلاني:</label>
+            <textarea 
+              value={desc} 
+              onChange={e => setDesc(e.target.value)} 
+              placeholder="اكتب تفاصيل الخدمة أو الخصومات التي تود مشاركتها..."
+              rows={2}
+              style={{
+                width: "100%", background: t.card, border: `1.5px solid ${t.border}`,
+                borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box",
+                resize: "none", fontFamily: "inherit"
+              }}
+            />
+          </div>
+
+          {/* Image Link */}
+          <div>
+            <label style={{ display: "block", color: t.textSec, fontSize: 11, fontWeight: 700, marginBottom: 5 }}>رابط صورة الإعلان:</label>
+            <input 
+              type="text" 
+              value={imgUrl} 
+              onChange={e => setImgUrl(e.target.value)} 
+              placeholder="ضع رابط الصورة المباشر هنا (أو اختر من المقترحات بالأسفل)"
+              style={{
+                width: "100%", background: t.card, border: `1.5px solid ${t.border}`,
+                borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box"
+              }}
+            />
+          </div>
+
+          {/* Preset Images Suggestions */}
+          <div>
+            <label style={{ display: "block", color: t.textMuted, fontSize: 10, fontWeight: 700, marginBottom: 4 }}>صور جاهزة مقترحة:</label>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}>
+              {suggestions.map((s, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setImgUrl(s.url)}
+                  style={{
+                    flexShrink: 0, background: imgUrl === s.url ? t.blueBg : t.card,
+                    border: imgUrl === s.url ? `1.5px solid ${C.blue}` : `1px solid ${t.border}`,
+                    borderRadius: 8, padding: "5px 10px", color: imgUrl === s.url ? C.blue : t.textSec,
+                    fontSize: 10.5, fontWeight: 700, cursor: "pointer", transition: "all 0.15s"
+                  }}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            {/* Tag Badges */}
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", color: t.textSec, fontSize: 11, fontWeight: 700, marginBottom: 5 }}>شارة الإعلان:</label>
+              <input 
+                type="text" 
+                value={tag} 
+                onChange={e => setTag(e.target.value)} 
+                placeholder="راعي رسمي، ممول، إعلان متميز"
+                style={{
+                  width: "100%", background: t.card, border: `1.5px solid ${t.border}`,
+                  borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box"
+                }}
+              />
+            </div>
+
+            {/* Link button Text */}
+            <div style={{ flex: 1 }}>
+              <label style={{ display: "block", color: t.textSec, fontSize: 11, fontWeight: 700, marginBottom: 5 }}>نص زر الرابط:</label>
+              <input 
+                type="text" 
+                value={linkText} 
+                onChange={e => setLinkText(e.target.value)} 
+                placeholder="احجز الآن، تواصل الآن"
+                style={{
+                  width: "100%", background: t.card, border: `1.5px solid ${t.border}`,
+                  borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box"
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Real-time Preview */}
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ display: "block", color: t.textMuted, fontSize: 11, fontWeight: 700, marginBottom: 6 }}>معاينة الإعلان الحية قبل التثبيت:</label>
+          <div style={{ border: `1.5px dashed ${t.borderMed}`, borderRadius: 16, padding: "10px 4px", background: "rgba(0,0,0,0.02)" }}>
+            <AdSpace 
+              ad={{ id: adId, title: title || "عنوان الإعلان يظهر هنا", desc: desc || "تفاصيل الإعلان ووصف المنتج يظهر هنا بالكامل وبشكل منسق.", imgUrl, linkText: linkText || "تواصل معنا", tag: tag || "إعلان" }}
+              t={t}
+              onEdit={() => {}}
+            />
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <button 
+            onClick={() => onSave(adId, { id: adId, title, desc, imgUrl, linkText, tag })}
+            style={{
+              flex: 1, background: C.blue, border: "none", color: "#fff",
+              borderRadius: 11, padding: "13px 0", fontSize: 12.5, fontWeight: 800,
+              cursor: "pointer", transition: "all 0.1s ease-out",
+              boxShadow: `0 3px 12px ${C.blue}44`
+            }}
+          >
+            تثبيت الإعلانات وحفظ 💾
+          </button>
+          <button 
+            onClick={onClose}
+            style={{
+              background: t.card, border: `1.5px solid ${t.border}`, color: t.textSec,
+              borderRadius: 11, padding: "13px 20px", fontSize: 12, fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            إلغاء الأمر
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ═══════════════════════════════════════════
    JOB CARD — exact Dubizzle layout
 ═══════════════════════════════════════════ */
@@ -1023,6 +1405,8 @@ interface HomeScreenProps {
   setSubFilter: (v: string | null) => void;
   likedJobIds: number[];
   setLikedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
+  adsConfig: Record<string, AdBanner>;
+  onEditAd: (adId: string) => void;
 }
 
 const HomeScreen = ({
@@ -1037,7 +1421,9 @@ const HomeScreen = ({
   subFilter,
   setSubFilter,
   likedJobIds,
-  setLikedJobIds
+  setLikedJobIds,
+  adsConfig,
+  onEditAd
 }: HomeScreenProps)=>{
   const [filter,setFilter]=useState("all");
 
@@ -1095,8 +1481,13 @@ const HomeScreen = ({
         </div>
       </div>
 
+      {/* ── TOP AD BANNER (Customizable) ── */}
+      {adsConfig.home_top && (
+        <AdSpace ad={adsConfig.home_top} t={t} onEdit={() => onEditAd("home_top")} />
+      )}
+
       {/* ── CATEGORIES SCROLL ── */}
-      <div style={{paddingTop:16,paddingBottom:4}}>
+      <div style={{paddingTop:8,paddingBottom:4}}>
         <SectionHead title="الفئات" action="عرض الكل" onAction={onCats} t={t}/>
         <div style={{
           display: "grid",
@@ -1268,9 +1659,16 @@ const HomeScreen = ({
                 const catJobs = jobs.filter(j => j.catId === cat.id);
                 if (catJobs.length === 0) return null;
                 const latestJobs = catJobs.slice(0, 10);
+                const adId = `cat_${cat.id}`;
+                const categoryAd = adsConfig[adId] || adsConfig.default_cat_ad;
 
                 return (
-                  <div key={cat.id} style={{ marginBottom: 22, direction: "rtl" }}>
+                  <div key={cat.id} style={{ marginBottom: 26, direction: "rtl" }}>
+                    {/* Small Ad Banner Above This Category */}
+                    {categoryAd && (
+                      <AdSpace ad={categoryAd} t={t} onEdit={() => onEditAd(adId)} small={true} />
+                    )}
+                    
                     {/* Section Header */}
                     <SectionHead 
                       title={`${cat.emoji} ${cat.ar}`} 
@@ -2483,6 +2881,8 @@ interface JobDetailProps {
   setLikedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
   appliedJobIds: number[];
   setAppliedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
+  adsConfig: Record<string, AdBanner>;
+  onEditAd: (adId: string) => void;
 }
 
 const JobDetail=({
@@ -2495,7 +2895,9 @@ const JobDetail=({
   likedJobIds,
   setLikedJobIds,
   appliedJobIds,
-  setAppliedJobIds
+  setAppliedJobIds,
+  adsConfig,
+  onEditAd
 }: JobDetailProps)=>{
   const liked = likedJobIds.includes(job.id);
   const applied = appliedJobIds.includes(job.id);
@@ -2678,6 +3080,11 @@ const JobDetail=({
             marginBottom:7,letterSpacing:0.4}}>الوصف</div>
           <p style={{color:t.text,fontSize:13,lineHeight:1.75,margin:0}}>{job.desc}</p>
         </div>
+
+        {/* Customizable Ad Space Under Description */}
+        {adsConfig.detail_under_desc && (
+          <AdSpace ad={adsConfig.detail_under_desc} t={t} onEdit={() => onEditAd("detail_under_desc")} />
+        )}
 
         <Div t={t} my={6}/>
 
@@ -4597,6 +5004,60 @@ export default function App(){
   const [subFilter, setSubFilter] = useState<string | null>(null);
   const t=T(dark);
 
+  // Advertisements Config State
+  const [adsConfig, setAdsConfig] = useState<Record<string, AdBanner>>({
+    home_top: {
+      id: "home_top",
+      title: "مجموعة بنيان للمقاولات والمطابخ الحديثة",
+      desc: "تصاميم عصرية وتنفيذ بأيدي أفضل المحترفين والمهندسين. عروض تقسيط ممتازة وحصرية.",
+      imgUrl: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80",
+      linkText: "اطلب معاينة وتصميم مجانياً ⚡",
+      tag: "راعي منصة أرزاق"
+    },
+    cat_realestate: {
+      id: "cat_realestate",
+      title: "العاصمة للتسويق العقاري والاستثمار",
+      desc: "شقق فيلات وأراضي تسليم فوري وتسهيلات كبرى في السداد بجميع المحافظات.",
+      imgUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80",
+      linkText: "تصفح العروض الآن",
+      tag: "إعلان عقاري مميز"
+    },
+    cat_clean: {
+      id: "cat_clean",
+      title: "الشركة الدولية للخدمات البيئية والنظافة",
+      desc: "تطهير وتعقيم حمامات السباحة، الخزانات، المنازل والمكاتب بأحدث تقنية بخار معتمدة.",
+      imgUrl: "https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?auto=format&fit=crop&w=400&q=80",
+      linkText: "اطلب عرض سعر",
+      tag: "ممول"
+    },
+    cat_plumb: {
+      id: "cat_plumb",
+      title: "سباكة الهدى لكشف التسربات وصيانتها",
+      desc: "كشف التسربات إلكترونياً بدون أي تكسير، تركيب أنظمة فلاتر ومضخات مياه مع الضمان.",
+      imgUrl: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
+      linkText: "تواصل مع خدمة العملاء 📞",
+      tag: "مروج"
+    },
+    default_cat_ad: {
+      id: "default_cat_ad",
+      title: "رواد التنمية للتشييد والمهن الحرة",
+      desc: "كافة مستلزمات الصيانة والمقاولات الحديثة متوفرة الآن بفروعنا بأفضل جودة وسعر منافس.",
+      imgUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80",
+      linkText: "تصفح الكتالوج الجديد 📣",
+      tag: "إعلان ممول"
+    },
+    detail_under_desc: {
+      id: "detail_under_desc",
+      title: "رابطة المقاولين المصريين للتشييد والبناء",
+      desc: "احصل على أفضل أسعار الاسمنت والحديد ومواد البناء مباشرة من المصنع بفاتورة معتمدة.",
+      imgUrl: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=500&q=80",
+      linkText: "الولوج للأسعار اليومية 📈",
+      tag: "شريك منصة أرزاق"
+    }
+  });
+
+  const [editingAdId, setEditingAdId] = useState<string | null>(null);
+
   // User Profile Global States
   const [profile, setProfile] = useState({
     name: "أبو ميرا",
@@ -4720,9 +5181,11 @@ export default function App(){
       likedJobIds={likedJobIds}
       setLikedJobIds={setLikedJobIds}
       appliedJobIds={appliedJobIds}
-      setAppliedJobIds={setAppliedJobIds}/>;
+      setAppliedJobIds={setAppliedJobIds}
+      adsConfig={adsConfig}
+      onEditAd={setEditingAdId}/>;
     switch(tab){
-      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
+      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId}/>;
       case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab} jobsList={jobsList} onJob={setJob} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
       case"post":   return <PostScreen t={t} onAddJob={handleAddJob} profile={profile}/>;
       case"chats":  return <ChatsScreen t={t} dark={dark}/>;
@@ -4747,7 +5210,7 @@ export default function App(){
         setNotifSettings={setNotifSettings}
         isLoggedOut={isLoggedOut}
         setIsLoggedOut={setIsLoggedOut}/>;
-      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
+      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId}/>;
     }
   };
 
@@ -4999,6 +5462,23 @@ export default function App(){
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── ARZAQ ADVERTISING CHANGER & GOVERNANCE MODAL ── */}
+      {editingAdId && (
+        <AdGovernanceModal 
+          adId={editingAdId}
+          t={t}
+          adsConfig={adsConfig}
+          onClose={() => setEditingAdId(null)}
+          onSave={(adId, updatedAd) => {
+            setAdsConfig(prev => ({
+              ...prev,
+              [adId]: updatedAd
+            }));
+            setEditingAdId(null);
+          }}
+        />
       )}
     </div>
   );
