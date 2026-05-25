@@ -3,6 +3,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { EGYPT_GOVERNORATES, Governorate, City } from "./egyptData";
 import { EgyptLocationPicker, LocationValue } from "./components/EgyptLocationPicker";
 import { ArzaqAuthView } from "./components/ArzaqAuthView";
+import { AdminPanel } from "./components/AdminPanel";
 import { db, auth, handleFirestoreError, OperationType } from "./firebase";
 import { collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -132,6 +133,8 @@ interface Job {
   ratingsList?: number[];
   status?: "active" | "pending" | "completed";
   images?: string[];
+  phone?: string;
+  posterUid?: string;
 }
 
 interface AdBanner {
@@ -268,6 +271,7 @@ const ic = {
   people: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75",
   wallet: "M21 12V7H5a2 2 0 010-4h14v4 M3 5v14a2 2 0 002 2h16v-5 M18 12a2 2 0 100 4 2 2 0 000-4z",
   share:  "M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8 M16 6l-4-4-4 4 M12 2v13",
+  admin:  "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z M12 15a3 3 0 100-6 3 3 0 000 6z",
 };
 
 /* ── DATA ─────────────────────────────────────────────── */
@@ -765,6 +769,31 @@ const Tag = ({children,color,bg,border,dot}: TagProps) => (
   </span>
 );
 
+const VerificationBadge = ({ size = 14 }: { size?: number }) => (
+  <span 
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "#0EA5E9",
+      color: "white",
+      borderRadius: "50%",
+      width: size,
+      height: size,
+      fontSize: size * 0.6,
+      fontWeight: 900,
+      marginLeft: 4,
+      marginRight: 4,
+      flexShrink: 0,
+      userSelect: "none",
+      boxShadow: "0 1px 3px rgba(14,165,233,0.3)"
+    }}
+    title="موثق ✓"
+  >
+    ✓
+  </span>
+);
+
 /* ── DIVIDER ─────────────────────────────── */
 interface DivProps {
   t: ThemeType;
@@ -801,9 +830,10 @@ interface AdSpaceProps {
   t: ThemeType;
   onEdit: () => void;
   small?: boolean;
+  isAdmin?: boolean;
 }
 
-const AdSpace = ({ ad, t, onEdit, small }: AdSpaceProps) => {
+const AdSpace = ({ ad, t, onEdit, small, isAdmin }: AdSpaceProps) => {
   return (
     <div style={{
       margin: small ? "4px 16px 14px" : "12px 16px",
@@ -817,32 +847,34 @@ const AdSpace = ({ ad, t, onEdit, small }: AdSpaceProps) => {
       direction: "rtl"
     }}>
       {/* Edit Gear Button */}
-      <button 
-        onClick={(e) => { e.stopPropagation(); onEdit(); }}
-        title="تنسيق وتحكيم الإعلان"
-        style={{
-          position: "absolute",
-          top: 8,
-          left: 8,
-          background: t.surface,
-          border: `1px solid ${t.border}`,
-          borderRadius: 8,
-          width: 28,
-          height: 28,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          zIndex: 10,
-          color: t.textSec,
-          transition: "all 0.15s ease",
-          fontSize: 12
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.background = t.blueBg}
-        onMouseLeave={(e) => e.currentTarget.style.background = t.surface}
-      >
-        ⚙️
-      </button>
+      {isAdmin && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          title="تنسيق وتحكيم الإعلان"
+          style={{
+            position: "absolute",
+            top: 8,
+            left: 8,
+            background: t.surface,
+            border: `1px solid ${t.border}`,
+            borderRadius: 8,
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 10,
+            color: t.textSec,
+            transition: "all 0.15s ease",
+            fontSize: 12
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = t.blueBg}
+          onMouseLeave={(e) => e.currentTarget.style.background = t.surface}
+        >
+          ⚙️
+        </button>
+      )}
 
       {/* Ad Tag Badge */}
       <div style={{
@@ -1178,9 +1210,10 @@ interface JobCardProps {
   onClick: () => void;
   liked?: boolean;
   onLikeToggle?: (e: React.MouseEvent) => void;
+  usersList?: any[];
 }
 
-const JobCard = ({job,t,onClick,liked,onLikeToggle}: JobCardProps)=>{
+const JobCard = ({job,t,onClick,liked,onLikeToggle,usersList}: JobCardProps)=>{
   const cat = CATS.find(c=>c.id===job.catId);
   const isWork = job.type==="need-worker";
   const [hov,setHov]=useState(false);
@@ -1256,7 +1289,9 @@ const JobCard = ({job,t,onClick,liked,onLikeToggle}: JobCardProps)=>{
             {isWork?"يطلب عامل":"يطلب عمل"}
           </Tag>
           {job.urgent&&<Tag color={t.orange} bg={t.orangeBg}>⚡ عاجل</Tag>}
-          {job.verified&&<Tag color={t.textMuted} bg={t.card} border={t.border}>✓</Tag>}
+          {(job.verified || (usersList && usersList.some(u => (u.name === job.pName || u.phone === job.phone) && u.verified))) && (
+            <VerificationBadge />
+          )}
           <Tag color={t.textMuted} bg={t.card} border={t.border}>{cat?.ar}</Tag>
         </div>
         <div style={{display:"flex",gap:12}}>
@@ -1453,6 +1488,8 @@ interface HomeScreenProps {
   setLikedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
   adsConfig: Record<string, AdBanner>;
   onEditAd: (adId: string) => void;
+  usersList?: any[];
+  profile?: any;
 }
 
 const HomeScreen = ({
@@ -1469,11 +1506,19 @@ const HomeScreen = ({
   likedJobIds,
   setLikedJobIds,
   adsConfig,
-  onEditAd
+  onEditAd,
+  usersList,
+  profile
 }: HomeScreenProps)=>{
   const [filter,setFilter]=useState("all");
 
   const jobs = jobsList
+    .filter(j => {
+      const isAdminOrManager = auth.currentUser?.email?.toLowerCase() === "alqaidpro@gmail.com" || (profile && profile.role === "manager");
+      const isApproved = j.status === "active" || j.status === undefined || !j.status;
+      const isOwnPost = auth.currentUser && (j.posterUid === auth.currentUser.uid || (j.phone && profile && j.phone === profile.phone));
+      return isApproved || isOwnPost || isAdminOrManager;
+    })
     .filter(j=>filter==="all"||(filter==="work"&&j.type==="need-worker")||(filter==="job"&&j.type==="need-job"))
     .filter(j=>!catFilter||j.catId===catFilter)
     .filter(j=>{
@@ -1534,7 +1579,7 @@ const HomeScreen = ({
 
       {/* ── TOP AD BANNER (Customizable) ── */}
       {adsConfig.home_top && (
-        <AdSpace ad={adsConfig.home_top} t={t} onEdit={() => onEditAd("home_top")} />
+        <AdSpace ad={adsConfig.home_top} t={t} onEdit={() => onEditAd("home_top")} isAdmin={auth.currentUser?.email?.toLowerCase() === "alqaidpro@gmail.com" || (profile && profile.role === "manager")} />
       )}
 
       {/* ── CATEGORIES SCROLL ── */}
@@ -1700,6 +1745,7 @@ const HomeScreen = ({
                   onClick={() => onJob(j)} 
                   liked={likedJobIds.includes(j.id)}
                   onLikeToggle={() => setLikedJobIds(prev => prev.includes(j.id) ? prev.filter(id => id !== j.id) : [...prev, j.id])}
+                  usersList={usersList}
                 />
               ))}
             </div>
@@ -1717,7 +1763,7 @@ const HomeScreen = ({
                   <div key={cat.id} style={{ marginBottom: 26, direction: "rtl" }}>
                     {/* Small Ad Banner Above This Category */}
                     {categoryAd && (
-                      <AdSpace ad={categoryAd} t={t} onEdit={() => onEditAd(adId)} small={true} />
+                      <AdSpace ad={categoryAd} t={t} onEdit={() => onEditAd(adId)} small={true} isAdmin={auth.currentUser?.email?.toLowerCase() === "alqaidpro@gmail.com" || (profile && profile.role === "manager")} />
                     )}
                     
                     {/* Section Header */}
@@ -2832,6 +2878,7 @@ interface JobDetailProps {
   setAppliedJobIds: React.Dispatch<React.SetStateAction<number[]>>;
   adsConfig: Record<string, AdBanner>;
   onEditAd: (adId: string) => void;
+  usersList?: any[];
 }
 
 const JobDetail=({
@@ -2846,7 +2893,8 @@ const JobDetail=({
   appliedJobIds,
   setAppliedJobIds,
   adsConfig,
-  onEditAd
+  onEditAd,
+  usersList
 }: JobDetailProps)=>{
   const liked = likedJobIds.includes(job.id);
   const applied = appliedJobIds.includes(job.id);
@@ -3031,9 +3079,12 @@ const JobDetail=({
         </div>
 
         {/* Customizable Ad Space Under Description */}
-        {adsConfig.detail_under_desc && (
-          <AdSpace ad={adsConfig.detail_under_desc} t={t} onEdit={() => onEditAd("detail_under_desc")} />
-        )}
+        {(() => {
+          const isUserAdmin = auth.currentUser?.email?.toLowerCase() === "alqaidpro@gmail.com" || (usersList && usersList.some(u => u.uid === auth.currentUser?.uid && u.role === "manager"));
+          return adsConfig.detail_under_desc && (
+            <AdSpace ad={adsConfig.detail_under_desc} t={t} onEdit={() => onEditAd("detail_under_desc")} isAdmin={isUserAdmin} />
+          );
+        })()}
 
         <Div t={t} my={6}/>
 
@@ -3238,7 +3289,10 @@ const JobDetail=({
             <Avatar letter={job.poster[0]} size={44}/>
             <div style={{flex:1,textAlign:"right"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <div style={{color:t.text,fontSize:14,fontWeight:700}}>{job.pName}</div>
+                <div style={{color:t.text,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
+                  <span>{job.pName}</span>
+                  {(job.verified || (usersList && usersList.some(u => (u.name === job.pName || u.phone === job.phone) && u.verified))) && <VerificationBadge />}
+                </div>
                 {/* Average rating next to worker's name */}
                 <div style={{
                   display:"flex",alignItems:"center",gap:3,
@@ -3253,7 +3307,7 @@ const JobDetail=({
                 عضو منذ 2022 · طنطا، الغربية
               </div>
             </div>
-            {job.verified&&<Tag color={t.textMuted} bg={t.surface} border={t.border}>✓ موثق</Tag>}
+            {(job.verified || (usersList && usersList.some(u => (u.name === job.pName || u.phone === job.phone) && u.verified))) && <Tag color={t.textMuted} bg={t.surface} border={t.border}>✓ موثق</Tag>}
           </div>
         </div>
       </div>
@@ -5104,9 +5158,18 @@ export default function App(){
         });
         loadedJobs.sort((a, b) => b.id - a.id);
         setJobsList(loadedJobs);
+        try {
+          localStorage.setItem("arzaq_fallback_jobs", JSON.stringify(loadedJobs));
+        } catch (e) {}
       }
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, "jobs");
+      console.warn("Firestore Jobs onSnapshot offline or deferred:", error);
+      try {
+        const cached = localStorage.getItem("arzaq_fallback_jobs");
+        if (cached) {
+          setJobsList(JSON.parse(cached));
+        }
+      } catch (e) {}
     });
 
     return () => unsubscribe();
@@ -5181,6 +5244,7 @@ export default function App(){
   });
 
   const [editingAdId, setEditingAdId] = useState<string | null>(null);
+  const [isOfflineActive, setIsOfflineActive] = useState(false);
 
   // User Profile Global States
   const [profile, setProfile] = useState({
@@ -5227,22 +5291,37 @@ export default function App(){
         const userRef = doc(db, "users", user.uid);
         try {
           const userSnap = await getDoc(userRef);
+          const currentRole = user.email?.toLowerCase() === "alqaidpro@gmail.com" ? "admin" : "user";
+          
           if (userSnap.exists()) {
             const data = userSnap.data();
-            setProfile({
+            const loadedRole = user.email?.toLowerCase() === "alqaidpro@gmail.com" ? "admin" : (data.role || "user");
+            
+            // If master admin doesn't have role saved yet, or needs update
+            if (user.email?.toLowerCase() === "alqaidpro@gmail.com" && data.role !== "admin") {
+              await setDoc(userRef, { role: "admin", verified: true }, { merge: true });
+            }
+
+            const fetchedProfile = {
               name: data.name || user.displayName || "مستخدم أرزاق",
               city: data.city || "طنطا",
               locationDetail: data.locationDetail || "طنطا، الغربية",
               phone: data.phone || user.phoneNumber || "",
-              verified: data.verified !== undefined ? data.verified : true,
+              verified: data.verified !== undefined ? data.verified : (user.email?.toLowerCase() === "alqaidpro@gmail.com"),
               rating: data.rating || 4.8,
               since: data.since || "2026",
               walletBalance: data.walletBalance !== undefined ? data.walletBalance : 350.00,
               bio: data.bio || "أعمل في مجال الخدمات المهنية والتطوير.",
               skills: data.skills || [],
               experience: data.experience || "خبرة حديثة",
-              avatarColor: data.avatarColor || C.blue
-            });
+              avatarColor: data.avatarColor || C.blue,
+              role: loadedRole,
+              email: user.email || data.email || ""
+            };
+            setProfile(fetchedProfile);
+            try {
+              localStorage.setItem("arzaq_fallback_profile_" + user.uid, JSON.stringify(fetchedProfile));
+            } catch (e) {}
           } else {
             // Create initial profile
             const dummyPhone = "010" + Math.floor(10000000 + Math.random() * 90000000);
@@ -5251,20 +5330,56 @@ export default function App(){
               city: "طنطا",
               locationDetail: "طنطا، الغربية",
               phone: user.phoneNumber || dummyPhone,
-              verified: true,
+              verified: user.email?.toLowerCase() === "alqaidpro@gmail.com",
               rating: 4.8,
               since: "2026",
               walletBalance: 350.00,
               bio: "أهلاً بك في حسابي المهني الجديد على منصة أرزاق.",
               skills: [],
               experience: "حديث التخرج / جديدة",
-              avatarColor: C.blue
+              avatarColor: C.blue,
+              role: currentRole,
+              email: user.email || ""
             };
             await setDoc(userRef, initialProfile);
             setProfile(initialProfile);
+            try {
+              localStorage.setItem("arzaq_fallback_profile_" + user.uid, JSON.stringify(initialProfile));
+            } catch (e) {}
           }
         } catch (error) {
-          console.error("Error loading user profile: ", error);
+          console.error("Error loading user profile from Firestore: ", error);
+          // TRY OFFLINE FALLBACK
+          try {
+            const cached = localStorage.getItem("arzaq_fallback_profile_" + user.uid);
+            if (cached) {
+              setProfile(JSON.parse(cached));
+              console.log("Offline state: restored profile successfully from browser cache.");
+              setIsOfflineActive(true);
+              return;
+            }
+          } catch (e) {}
+
+          const currentRole = user.email?.toLowerCase() === "alqaidpro@gmail.com" ? "admin" : "user";
+          const dummyPhone = "010" + Math.floor(10000000 + Math.random() * 90000000);
+          const fallbackProfile = {
+            name: user.displayName || user.email?.split("@")[0] || "مستخدم أرزاق (أوفلاين)",
+            city: "طنطا",
+            locationDetail: "اتصال غير مستقر",
+            phone: user.phoneNumber || dummyPhone,
+            verified: user.email?.toLowerCase() === "alqaidpro@gmail.com",
+            rating: 4.8,
+            since: "2026",
+            walletBalance: 350.00,
+            bio: "أهلاً بك. الحساب محمل حالياً بنمط أوفلاين مؤقتاً بالذاكرة المحلية لضمان استمرارية تصفحك.",
+            skills: [],
+            experience: "",
+            avatarColor: C.blue,
+            role: currentRole,
+            email: user.email || ""
+          };
+          setProfile(fallbackProfile);
+          setIsOfflineActive(true);
         }
       } else {
         // Not logged in and not guest yet
@@ -5280,6 +5395,51 @@ export default function App(){
       setIsGuest(false);
     }
   }, [isLoggedOut]);
+
+  const [usersList, setUsersList] = useState<any[]>([]);
+
+  // Load real-time users from Firestore to support blue badges and moderation
+  useEffect(() => {
+    const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+      const ulist: any[] = [];
+      snapshot.forEach(docSnap => {
+        ulist.push({ uid: docSnap.id, ...docSnap.data() });
+      });
+      setUsersList(ulist);
+    }, (error) => {
+      console.error("Error loading users database snapshot:", error);
+    });
+    return () => unsubUsers();
+  }, []);
+
+  // Load real-time customized ads from Firestore to support instant updates
+  useEffect(() => {
+    const unsubAds = onSnapshot(collection(db, "ads"), (snapshot) => {
+      if (!snapshot.empty) {
+        const loaded: Record<string, AdBanner> = {};
+        snapshot.forEach(docSnap => {
+          loaded[docSnap.id] = docSnap.data() as AdBanner;
+        });
+        setAdsConfig(prev => ({
+          ...prev,
+          ...loaded
+        }));
+      }
+    });
+    return () => unsubAds();
+  }, []);
+
+  const handleSaveAd = async (adId: string, updatedAd: AdBanner) => {
+    setAdsConfig(prev => ({
+      ...prev,
+      [adId]: updatedAd
+    }));
+    try {
+      await setDoc(doc(db, "ads", adId), updatedAd);
+    } catch (err) {
+      console.error("Error saving ad space to Firestore: ", err);
+    }
+  };
 
   const handleRateJob = async (jobId: number, rating: number) => {
     let updatedJobObj: Job | null = null;
@@ -5383,19 +5543,23 @@ export default function App(){
     );
   };
 
-  const nav=[
+  const isAdminOrManager = auth.currentUser?.email?.toLowerCase() === "alqaidpro@gmail.com" || (profile && profile.role === "manager");
+
+  const nav = [
     {k:"home",  l:"الرئيسية",d:ic.home},
     {k:"cats",  l:"الفئات",  d:ic.grid},
     {k:"post",  l:"",         d:ic.plus},
     {k:"chats", l:"الدردشات",d:ic.chat},
     {k:"profile",l:"حساب",   d:ic.user},
+    ...(isAdminOrManager ? [{k:"admin", l:"لوحة الإدارة", d:ic.admin}] : [])
   ];
 
   const handleAddJob = async (newJob: Job) => {
     try {
       await setDoc(doc(db, "jobs", String(newJob.id)), {
         ...newJob,
-        status: newJob.status || "active"
+        status: newJob.status || "pending", // Newly added jobs are marked as pending approval initially
+        posterUid: auth.currentUser?.uid || ""
       });
       setTab("home");
     } catch (error) {
@@ -5413,11 +5577,13 @@ export default function App(){
       appliedJobIds={appliedJobIds}
       setAppliedJobIds={setAppliedJobIds}
       adsConfig={adsConfig}
-      onEditAd={setEditingAdId}/>;
-    if (isGuest && (tab === "post" || tab === "chats" || tab === "profile")) {
+      onEditAd={setEditingAdId}
+      usersList={usersList}/>;
+    if (isGuest && (tab === "post" || tab === "chats" || tab === "profile" || tab === "admin")) {
       let titleMsg = "سجل الآن لنشر إعلانك مجاناً وبثوانٍ! 🚀";
       if (tab === "chats") titleMsg = "قم بتسجيل الدخول لبدء محادثاتك الفورية 💬";
       if (tab === "profile") titleMsg = "قم بتسجيل الدخول للوصول لبيانات حسابك المهني";
+      if (tab === "admin") titleMsg = "التبويب مقيد للأعضاء ذوي الصلاحيات الإدارية فقط.";
 
       return (
         <ArzaqAuthView 
@@ -5439,10 +5605,11 @@ export default function App(){
     }
 
     switch(tab){
-      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId}/>;
+      case"home":   return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId} usersList={usersList} profile={profile}/>;
       case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab} jobsList={jobsList} onJob={setJob} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
       case"post":   return <PostScreen t={t} onAddJob={handleAddJob} profile={profile}/>;
       case"chats":  return <ChatsScreen t={t} dark={dark}/>;
+      case"admin":  return <AdminPanel t={t} dark={dark} jobsList={jobsList} usersList={usersList} adsConfig={adsConfig} currentUserEmail={auth.currentUser?.email || ""} currentUserId={auth.currentUser?.uid || ""} onSaveAd={handleSaveAd} onBack={()=>setTab("home")}/>;
       case"profile":return <ProfileScreen 
         t={t} 
         dark={dark} 
@@ -5464,7 +5631,7 @@ export default function App(){
         setNotifSettings={setNotifSettings}
         isLoggedOut={isLoggedOut}
         setIsLoggedOut={setIsLoggedOut}/>;
-      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId}/>;
+      default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId} usersList={usersList} profile={profile}/>;
     }
   };
 
@@ -5533,6 +5700,27 @@ export default function App(){
           <Svg d={ic.chevD} s={11} c={t.textMuted}/>
         </button>
       </div>
+
+      {/* ── OFFLINE STATUS BANNER ── */}
+      {isOfflineActive && (
+        <div style={{
+          background: t.orangeBg,
+          color: t.orange,
+          borderBottom: `1px solid ${t.border}`,
+          padding: "8px 12px",
+          textAlign: "center",
+          fontSize: 11,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          direction: "rtl",
+          zIndex: 90
+        }}>
+          <span>🔌 وضع أوفلاين: نعمل بالذاكرة المحلية ومستمرون بتقديم الخدمات المهنية دليلاً وتصفحاً.</span>
+        </div>
+      )}
 
       {/* ── SEARCH (home only) ── */}
       {!job&&tab==="home"&&(

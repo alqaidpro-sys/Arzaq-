@@ -41,6 +41,8 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
   // Simulated form states
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUpMode, setIsSignUpMode] = useState(true);
   const [pinCode, setPinCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [authError, setAuthError] = useState("");
@@ -180,23 +182,53 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
       setAuthError("يرجى إدخال بريد إلكتروني صحيح");
       return;
     }
-    if (!fullName) {
-      setAuthError("يرجى كتابة اسمك الكامل لربط الحساب");
+    if (isSignUpMode && !fullName) {
+      setAuthError("يرجى كتابة اسمك الكامل لربط الحساب الجديد");
       return;
     }
+    if (!password || password.length < 6) {
+      setAuthError("يرجى إدخال كلمة مرور مكونة من 6 أحرف أو أرقام على الأقل لضمان أمان حسابك المهني.");
+      return;
+    }
+    
     setIsLoading(true);
     setAuthError("");
     try {
       const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import("firebase/auth");
       let userCredential;
-      const defaultPassword = "defaultPassword123!"; // Simple transparent default password for convenience
-      try {
-        userCredential = await createUserWithEmailAndPassword(auth, email, defaultPassword);
-      } catch (createErr: any) {
-        if (createErr.code === "auth/email-already-in-use") {
-          userCredential = await signInWithEmailAndPassword(auth, email, defaultPassword);
-        } else {
-          throw createErr;
+      
+      if (isSignUpMode) {
+        try {
+          userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        } catch (createErr: any) {
+          if (createErr.code === "auth/email-already-in-use") {
+            setAuthError("هذا البريد الإلكتروني مسجل بالفعل على أرزاق! جاري نقلك تلقائياً لوضع 'تسجيل الدخول' لتتمكن من إدخال كلمة المرور المعتمدة ودخول حسابك.");
+            setIsSignUpMode(false);
+            setIsLoading(false);
+            return;
+          } else if (createErr.code === "auth/weak-password") {
+            setAuthError("كلمة المرور المرفقة ضعيفة جداً، يرجى كتابة كلمة مرور أكثر أماناً (6 رموز على الأقل).");
+            setIsLoading(false);
+            return;
+          } else {
+            throw createErr;
+          }
+        }
+      } else {
+        try {
+          userCredential = await signInWithEmailAndPassword(auth, email, password);
+        } catch (loginErr: any) {
+          if (loginErr.code === "auth/wrong-password") {
+            setAuthError("كلمة المرور غير صحيحة! يرجى التأكد وإعادة المحاولة.");
+            setIsLoading(false);
+            return;
+          } else if (loginErr.code === "auth/user-not-found") {
+            setAuthError("لم نجد حساباً مهنياً مسجلاً بهذا البريد! يرجى التبديل لتبويب 'إنشاء حساب جديد' أولاً.");
+            setIsLoading(false);
+            return;
+          } else {
+            throw loginErr;
+          }
         }
       }
       
@@ -206,10 +238,15 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
       const userRef = doc(db, "users", uid);
       const userSnap = await getDoc(userRef);
       
+      let pName = fullName;
       let phoneNo = "011" + Math.floor(10000000 + Math.random() * 90000000);
+      
       if (!userSnap.exists()) {
+        if (!pName) {
+          pName = userCredential.user.displayName || email.split("@")[0] || "مستفيد أرزاق";
+        }
         const newProfile = {
-          name: fullName,
+          name: pName,
           city: "طنطا",
           locationDetail: "طنطا، مصر",
           phone: phoneNo,
@@ -223,14 +260,16 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
         };
         await setDoc(userRef, newProfile);
       } else {
-        phoneNo = userSnap.data().phone || phoneNo;
+        const data = userSnap.data();
+        pName = data.name || pName || "مستفيد أرزاق";
+        phoneNo = data.phone || phoneNo;
       }
       
-      onLoginSuccess(fullName, phoneNo);
+      onLoginSuccess(pName, phoneNo);
       setCurrentStep("success");
     } catch (err: any) {
-      console.error("Email auth error:", err);
-      setAuthError(`خطأ في مصادقة البريد الإلكتروني: ${err.message || err}`);
+      console.error("Email auth error on Arzaq:", err);
+      setAuthError(`فشل إتمام العملية: ${err.message || err}`);
     } finally {
       setIsLoading(false);
     }
@@ -275,7 +314,13 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
         setCurrentStep("success");
       } catch (err: any) {
         console.error("Google Auth error:", err);
-        setAuthError(`فشل الاتصال بجوجل: ${err.message || err}`);
+        if (err.code === "auth/popup-blocked" || err.code === "auth/cancelled-popup-interactive" || String(err).includes("closed") || String(err).includes("popup") || String(err).includes("iframe")) {
+          setAuthError("نظام المعاينة يمنع النوافذ المنبثقة لـ Google (Popup Blocked). يرجى الضغط على زر 'المتابعة بالبريد الإلكتروني' وإدخال عنوان Gmail الخاص بك مع كلمة مرور لتسجيل الدخول الفوري دون أي قيود، أو النقر على 'افتح في نافذة جديدة' لتخطي حاجز الإطار الآمن.");
+        } else if (err.code === "auth/configuration-not-found" || err.code === "auth/operation-not-allowed") {
+          setAuthError("مزود تسجيل الدخول بـ Google غير مفعّل حالياً في مشروعك بـ Firebase Console. يرجى الدخول لـ Authentication وتمكينه، أو تفضل باستخدام وسيلة 'البريد الإلكتروني' أو 'الهاتف' سريعة التفعيل!");
+        } else {
+          setAuthError(`فشل الاتصال بجوجل: ${err.message || err}`);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -533,6 +578,19 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
             </div>
             <h2 style={{ color: t.text, fontSize: 20, fontWeight: 950, margin: "0 0 6px" }}>تسجيل الدخول أو الاشتراك</h2>
             <p style={{ color: t.textMuted, fontSize: 12, margin: 0 }}>اختر وسيلة الدخول الأسهل لك للبدء فوراً</p>
+            <div style={{
+              background: t.blueBg,
+              border: `1px solid ${t.blue}22`,
+              borderRadius: 10,
+              padding: "8px 12px",
+              marginTop: 12,
+              fontSize: 11,
+              color: t.blue,
+              lineHeight: 1.5,
+              textAlign: "right"
+            }}>
+              💡 <strong>تلميح المعاينة:</strong> إذا واجهت مشكلة في تسجيل الدخول التلقائي بـ Google بسبب حظر النوافذ المنبثقة، يمكنك تجربة خيار <strong>"الاستمر عبر البريد الإلكتروني"</strong> أو فتح التطبيق بملء الشاشة من زر أعلى اليسار.
+            </div>
           </div>
 
           {/* Error notice */}
@@ -851,10 +909,13 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
       {currentStep === "email_form" && (
         <form onSubmit={handleEmailSubmit} style={{ display: "flex", flexDirection: "column", flex: 1, padding: 24 }}>
           {/* Back button */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <button 
               type="button"
-              onClick={() => setCurrentStep("methods")}
+              onClick={() => {
+                setAuthError("");
+                setCurrentStep("methods");
+              }}
               style={{
                 background: t.surface, border: `1px solid ${t.border}`, borderRadius: "50%",
                 width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
@@ -863,48 +924,133 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
             >
               <span>◀</span>
             </button>
-            <h4 style={{ color: t.text, fontSize: 14, fontWeight: 800, margin: 0 }}>المتابعة بالبريد</h4>
+            <h4 style={{ color: t.text, fontSize: 14, fontWeight: 800, margin: 0 }}>
+              {isSignUpMode ? "إنشاء حساب مهني بالبريد" : "تسجيل الدخول بالبريد"}
+            </h4>
             <div style={{ width: 32 }} />
           </div>
 
-          <p style={{ color: t.textSec, fontSize: 12, lineHeight: 1.6, marginBottom: 20 }}>
-            أنشئ حسابك فوراً بالبريد الإلكتروني للتمتع بكافة مزايا أرزاق، مثل توظيف العمالة، ونشر إعلانات المهن والمطاعم والمصانع.
+          {/* Tab Switcher */}
+          <div style={{
+            display: "flex",
+            background: t.surface,
+            borderRadius: 10,
+            padding: 4,
+            border: `1px solid ${t.border}`,
+            marginBottom: 20
+          }}>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthError("");
+                setIsSignUpMode(true);
+              }}
+              style={{
+                flex: 1,
+                padding: "10px 0",
+                fontSize: 12.5,
+                borderRadius: 8,
+                border: "none",
+                cursor: "pointer",
+                background: isSignUpMode ? brandBlue : "transparent",
+                color: isSignUpMode ? "#fff" : t.textSec,
+                fontWeight: isSignUpMode ? "bold" : "normal",
+                transition: "all 0.2s"
+              }}
+            >
+              🆕 حساب جديد
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthError("");
+                setIsSignUpMode(false);
+              }}
+              style={{
+                flex: 1,
+                padding: "10px 0",
+                fontSize: 12.5,
+                borderRadius: 8,
+                border: "none",
+                cursor: "pointer",
+                background: !isSignUpMode ? brandBlue : "transparent",
+                color: !isSignUpMode ? "#fff" : t.textSec,
+                fontWeight: !isSignUpMode ? "bold" : "normal",
+                transition: "all 0.2s"
+              }}
+            >
+              🔐 تسجيل دخول
+            </button>
+          </div>
+
+          <p style={{ color: t.textSec, fontSize: 11.5, lineHeight: 1.6, marginBottom: 16 }}>
+            {isSignUpMode 
+              ? "سجل حسابك مجاناً لتتمكن من إضافة إعلانات توظيف العمالة، ونشر خدماتك المهنية والتواصل الفوري على أرزاق." 
+              : "أدخل معلومات حسابك للاستمرار وإدارة طلباتك والتواصل الفوري مع زبائنك الحاليين."}
           </p>
 
           {authError && (
-            <div style={{ background: t.redBg, color: "#EF4444", padding: 10, borderRadius: 10, fontSize: 11.5, fontWeight: 700, marginBottom: 14 }}>
+            <div style={{ background: t.redBg, color: "#EF4444", padding: "10px 14px", borderRadius: 10, fontSize: 11.5, fontWeight: 700, marginBottom: 14, lineHeight: 1.5 }}>
               ⚠️ {authError}
             </div>
           )}
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", color: t.textSec, fontSize: 11.5, fontWeight: 700, marginBottom: 6 }}>الاسم بالكامل *</label>
-            <input 
-              type="text"
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              placeholder="مثال: أسامة الشافعي"
-              required
-              style={{
-                width: "100%", background: t.surface, border: `1.5px solid ${t.borderMed}`,
-                borderRadius: 10, padding: 12, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box"
-              }}
-            />
-          </div>
+          {/* Full Name (Sign Up only) */}
+          {isSignUpMode && (
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", color: t.textSec, fontSize: 11.5, fontWeight: 700, marginBottom: 6 }}>الاسم بالكامل *</label>
+              <input 
+                type="text"
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                placeholder="مثال: أسامة الشافعي"
+                required={isSignUpMode}
+                style={{
+                  width: "100%", background: t.surface, border: `1.5px solid ${t.borderMed}`,
+                  borderRadius: 10, padding: 12, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box"
+                }}
+              />
+            </div>
+          )}
 
-          <div style={{ marginBottom: 20 }}>
+          {/* Email Address */}
+          <div style={{ marginBottom: 14 }}>
             <label style={{ display: "block", color: t.textSec, fontSize: 11.5, fontWeight: 700, marginBottom: 6 }}>البريد الإلكتروني *</label>
             <input 
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="yourname@gmail.com"
+              placeholder="email@example.com"
               required
               style={{
                 width: "100%", background: t.surface, border: `1.5px solid ${t.borderMed}`,
-                borderRadius: 10, padding: 12, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box"
+                borderRadius: 10, padding: 12, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box",
+                textAlign: "left"
               }}
             />
+          </div>
+
+          {/* Password */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", color: t.textSec, fontSize: 11.5, fontWeight: 700, marginBottom: 6 }}>كلمة المرور *</label>
+            <input 
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={6}
+              style={{
+                width: "100%", background: t.surface, border: `1.5px solid ${t.borderMed}`,
+                borderRadius: 10, padding: 12, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box",
+                textAlign: "left"
+              }}
+            />
+            {isSignUpMode && (
+              <span style={{ display: "block", color: t.textMuted, fontSize: 10.5, marginTop: 4 }}>
+                يجب ألا تقل عن 6 أحرف أو أرقام لتأمين حسابك.
+              </span>
+            )}
           </div>
 
           <button 
@@ -912,10 +1058,15 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
             disabled={isLoading}
             style={{
               width: "100%", background: brandBlue, color: "#fff", border: "none",
-              borderRadius: 12, padding: "14px 0", fontSize: 13, fontWeight: 800, cursor: isLoading ? "not-allowed" : "pointer"
+              borderRadius: 12, padding: "14px 0", fontSize: 13, fontWeight: 800, cursor: isLoading ? "not-allowed" : "pointer",
+              boxShadow: "0 4px 15px rgba(14, 165, 233, 0.25)"
             }}
           >
-            {isLoading ? "جاري الإرسال والمولد الذكي للحساب..." : "إنشاء حساب فوري بميزات كاملة ✨"}
+            {isLoading 
+              ? "جاري معالجة طلبك المهني..." 
+              : isSignUpMode 
+                ? "إنشاء حساب مهني فوري 🚀" 
+                : "تسجيل الدخول الآمن لحسابي ➔"}
           </button>
         </form>
       )}
