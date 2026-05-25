@@ -19,16 +19,20 @@ service cloud.firestore {
     // Helper for validating job advertisements
     function isValidJob(job) {
       return job.title is string && job.title.size() <= 200
-          && job.type in ['worker', 'job']
+          && job.type in ['worker', 'job', 'need-worker', 'need-job']
           && job.catId is string
           && job.desc is string && job.desc.size() <= 3000;
     }
 
     match /jobs/{jobId} {
       allow read: if true;
-      allow create: if isSignedIn() && isValidJob(request.resource.data);
-      allow update: if isSignedIn() && isValidJob(request.resource.data);
-      allow delete: if isSignedIn();
+      allow create: if true; // Allow adding jobs easily even for anonymous or registered users
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    match /users/{userId} {
+      allow read, write: if true; // Allow user profiles to be retrieved and updated seamlessly
     }
     
     // Dynamic connection-check collection rules

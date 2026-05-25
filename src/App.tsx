@@ -3,8 +3,9 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 import { EGYPT_GOVERNORATES, Governorate, City } from "./egyptData";
 import { EgyptLocationPicker, LocationValue } from "./components/EgyptLocationPicker";
 import { ArzaqAuthView } from "./components/ArzaqAuthView";
-import { db, handleFirestoreError, OperationType } from "./firebase";
-import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { db, auth, handleFirestoreError, OperationType } from "./firebase";
+import { collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 /* ═══════════════════════════════════════════════════════════
    DESIGN SYSTEM — Dubizzle-grade professional
@@ -3517,8 +3518,8 @@ const ProfileScreen=({
     }
   };
 
-  const handleSaveProfile = () => {
-    setProfile({
+  const handleSaveProfile = async () => {
+    const updated = {
       ...profile,
       name: editName,
       phone: editPhone,
@@ -3527,7 +3528,15 @@ const ProfileScreen=({
       bio: editBio,
       skills: editSkills,
       experience: editExp
-    });
+    };
+    setProfile(updated);
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, "users", auth.currentUser.uid), updated, { merge: true });
+      } catch (err) {
+        console.error("Error saving profile to Firestore:", err);
+      }
+    }
     setEditSuccess(true);
     setTimeout(() => setEditSuccess(false), 3000);
   };
@@ -3542,7 +3551,7 @@ const ProfileScreen=({
 
   const ALL_SKILLS = ["تنظيف", "سباكة", "كهرباء", "دهانات", "نجارة", "تكييف", "حراسة مباني", "تنسيق حدائق", "نقل أثاث"];
 
-  const handleAddDeposit = () => {
+  const handleAddDeposit = async () => {
     const amt = parseFloat(depositAmt);
     if (isNaN(amt) || amt <= 0) {
       setWalletError("الرجاء إدخال مبلغ صحيح لشحن الرصيد.");
@@ -3553,7 +3562,15 @@ const ProfileScreen=({
       instapay: "إنستا باي",
       credit: "بطاقة ائتمانية / ميزة"
     };
-    setProfile((prev: any) => ({ ...prev, walletBalance: prev.walletBalance + amt }));
+    const newBal = profile.walletBalance + amt;
+    setProfile((prev: any) => ({ ...prev, walletBalance: newBal }));
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, "users", auth.currentUser.uid), { walletBalance: newBal }, { merge: true });
+      } catch (err) {
+        console.error(err);
+      }
+    }
     setWalletTransactions((prev: any[]) => [
       {
         id: Date.now(),
@@ -3571,7 +3588,7 @@ const ProfileScreen=({
     setTimeout(() => setWalletSuccess(""), 4000);
   };
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const amt = parseFloat(withdrawAmt);
     if (isNaN(amt) || amt <= 0) {
       setWalletError("الرجاء إدخال مبلغ سحب صحيح.");
@@ -3586,7 +3603,15 @@ const ProfileScreen=({
       instapay: "إنستا باي",
       credit: "حساب بنكي / ميزة"
     };
-    setProfile((prev: any) => ({ ...prev, walletBalance: prev.walletBalance - amt }));
+    const newBal = profile.walletBalance - amt;
+    setProfile((prev: any) => ({ ...prev, walletBalance: newBal }));
+    if (auth.currentUser) {
+      try {
+        await setDoc(doc(db, "users", auth.currentUser.uid), { walletBalance: newBal }, { merge: true });
+      } catch (err) {
+        console.error(err);
+      }
+    }
     setWalletTransactions((prev: any[]) => [
       {
         id: Date.now(),
@@ -4839,7 +4864,11 @@ const ProfileScreen=({
               هل أنت متأكد من رغبتك في تسجيل الخروج والعودة لشاشة البدء؟ لن تفقد بياناتك المحلية.
             </p>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => { setIsLoggedOut(true); setShowLogoutConfirm(false); }}
+              <button onClick={() => { 
+                import("firebase/auth").then(({ signOut }) => signOut(auth));
+                setIsLoggedOut(true); 
+                setShowLogoutConfirm(false); 
+              }}
                 style={{ flex: 1, background: C.red, color: "white", border: "none", padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 نعم، خروج
               </button>
@@ -5185,8 +5214,66 @@ export default function App(){
     messages: true,
     offers: false,
   });
-  const [isLoggedOut, setIsLoggedOut] = useState(false);
+  const [isLoggedOut, setIsLoggedOut] = useState(true); // Default to true so they must authentication or choose guest
   const [isGuest, setIsGuest] = useState(false);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsLoggedOut(false);
+        setIsGuest(false);
+        
+        // Fetch profile from Firestore
+        const userRef = doc(db, "users", user.uid);
+        try {
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            setProfile({
+              name: data.name || user.displayName || "مستخدم أرزاق",
+              city: data.city || "طنطا",
+              locationDetail: data.locationDetail || "طنطا، الغربية",
+              phone: data.phone || user.phoneNumber || "",
+              verified: data.verified !== undefined ? data.verified : true,
+              rating: data.rating || 4.8,
+              since: data.since || "2026",
+              walletBalance: data.walletBalance !== undefined ? data.walletBalance : 350.00,
+              bio: data.bio || "أعمل في مجال الخدمات المهنية والتطوير.",
+              skills: data.skills || [],
+              experience: data.experience || "خبرة حديثة",
+              avatarColor: data.avatarColor || C.blue
+            });
+          } else {
+            // Create initial profile
+            const dummyPhone = "010" + Math.floor(10000000 + Math.random() * 90000000);
+            const initialProfile = {
+              name: user.displayName || user.email?.split("@")[0] || "مستخدم أرزاق جديد",
+              city: "طنطا",
+              locationDetail: "طنطا، الغربية",
+              phone: user.phoneNumber || dummyPhone,
+              verified: true,
+              rating: 4.8,
+              since: "2026",
+              walletBalance: 350.00,
+              bio: "أهلاً بك في حسابي المهني الجديد على منصة أرزاق.",
+              skills: [],
+              experience: "حديث التخرج / جديدة",
+              avatarColor: C.blue
+            };
+            await setDoc(userRef, initialProfile);
+            setProfile(initialProfile);
+          }
+        } catch (error) {
+          console.error("Error loading user profile: ", error);
+        }
+      } else {
+        // Not logged in and not guest yet
+        setIsLoggedOut(true);
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
 
   useEffect(() => {
     if (isLoggedOut) {

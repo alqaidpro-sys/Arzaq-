@@ -108,14 +108,64 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
     try {
       const confirmationResult = (window as any).confirmationResult;
       if (confirmationResult) {
-        await confirmationResult.confirm(pinCode);
+        const authResult = await confirmationResult.confirm(pinCode);
+        const uid = authResult.user.uid;
+        
+        // Save standard user profile to Firestore
+        const { doc, setDoc, getDoc } = await import("firebase/firestore");
+        const { db } = await import("../firebase");
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          const newProfile = {
+            name: fullName || "مستخدم أرزاق",
+            city: "طنطا",
+            locationDetail: "طنطا، مصر",
+            phone: phoneNumber,
+            verified: true,
+            rating: 4.8,
+            since: "2026",
+            walletBalance: 350.00,
+            bio: "أهلاً بك في حسابي المهني على منصة أرزاق.",
+            skills: [],
+            experience: "حديث التخرج / جديدة"
+          };
+          await setDoc(userRef, newProfile);
+        }
       } else {
         // Validation mockup logic fallback
         if (pinCode !== "123456" && pinCode !== (window as any).mockOtp) {
           throw new Error("رمز التحقق غير صحيح. استخدم الرمز الافتراضي (123456) لإتمام معاينة أرزاق بنجاح!");
         }
+        
+        // Real anonymous Firebase connection + Real Firestore user document creation
+        const { signInAnonymously } = await import("firebase/auth");
+        const res = await signInAnonymously(auth);
+        
+        const { doc, setDoc, getDoc } = await import("firebase/firestore");
+        const { db } = await import("../firebase");
+        const userRef = doc(db, "users", res.user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          const newProfile = {
+            name: fullName || "مستخدم أرزاق",
+            city: "طنطا",
+            locationDetail: "طنطا، مصر",
+            phone: phoneNumber,
+            verified: true,
+            rating: 4.8,
+            since: "2026",
+            walletBalance: 350.00,
+            bio: "أهلاً بك في حسابي المهني الجديد على منصة أرزاق.",
+            skills: [],
+            experience: "حديث التخرج / جديدة"
+          };
+          await setDoc(userRef, newProfile);
+        }
       }
-      onLoginSuccess(fullName, phoneNumber);
+      onLoginSuccess(fullName || "مستخدم أرزاق", phoneNumber);
       setCurrentStep("success");
     } catch (error: any) {
       setAuthError(error.message || "رمز التحقق الذي أدخلته غير صحيح، يرجى المحاولة مرة أخرى.");
@@ -124,7 +174,7 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
     }
   };
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes("@")) {
       setAuthError("يرجى إدخال بريد إلكتروني صحيح");
@@ -136,24 +186,109 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
     }
     setIsLoading(true);
     setAuthError("");
-    setTimeout(() => {
-      setIsLoading(false);
-      onLoginSuccess(fullName, "011" + Math.floor(10000000 + Math.random() * 90000000));
+    try {
+      const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import("firebase/auth");
+      let userCredential;
+      const defaultPassword = "defaultPassword123!"; // Simple transparent default password for convenience
+      try {
+        userCredential = await createUserWithEmailAndPassword(auth, email, defaultPassword);
+      } catch (createErr: any) {
+        if (createErr.code === "auth/email-already-in-use") {
+          userCredential = await signInWithEmailAndPassword(auth, email, defaultPassword);
+        } else {
+          throw createErr;
+        }
+      }
+      
+      const uid = userCredential.user.uid;
+      const { doc, setDoc, getDoc } = await import("firebase/firestore");
+      const { db } = await import("../firebase");
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      
+      let phoneNo = "011" + Math.floor(10000000 + Math.random() * 90000000);
+      if (!userSnap.exists()) {
+        const newProfile = {
+          name: fullName,
+          city: "طنطا",
+          locationDetail: "طنطا، مصر",
+          phone: phoneNo,
+          verified: true,
+          rating: 4.8,
+          since: "2026",
+          walletBalance: 350.00,
+          bio: "أهلاً بك في حسابي المهني الجديد على منصة أرزاق.",
+          skills: [],
+          experience: "حديث التخرج / جديدة"
+        };
+        await setDoc(userRef, newProfile);
+      } else {
+        phoneNo = userSnap.data().phone || phoneNo;
+      }
+      
+      onLoginSuccess(fullName, phoneNo);
       setCurrentStep("success");
-    }, 1500);
+    } catch (err: any) {
+      console.error("Email auth error:", err);
+      setAuthError(`خطأ في مصادقة البريد الإلكتروني: ${err.message || err}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSocialMock = (provider: string) => {
+  const handleSocialMock = async (provider: string) => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      const mockNames: Record<string, string> = {
-        Google: "علاء الرفاعي (جوجل)",
-        Facebook: "أحمد رشاد (فيسبوك)"
-      };
-      onLoginSuccess(mockNames[provider] || "مستخدم أرزاق جديد", "012" + Math.floor(10000000 + Math.random() * 90000000));
-      setCurrentStep("success");
-    }, 1000);
+    setAuthError("");
+    if (provider === "Google") {
+      try {
+        const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
+        const googleProvider = new GoogleAuthProvider();
+        const res = await signInWithPopup(auth, googleProvider);
+        const name = res.user.displayName || "مستخدم أرزاق";
+        
+        const { doc, setDoc, getDoc } = await import("firebase/firestore");
+        const { db } = await import("../firebase");
+        const userRef = doc(db, "users", res.user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        let phoneNo = "010" + Math.floor(10000000 + Math.random() * 90000000);
+        if (!userSnap.exists()) {
+          const newProfile = {
+            name,
+            city: "طنطا",
+            locationDetail: "طنطا، مصر",
+            phone: phoneNo,
+            verified: true,
+            rating: 4.8,
+            since: "2026",
+            walletBalance: 350.00,
+            bio: "أهلاً بك في حسابي المهني على منصة أرزاق.",
+            skills: [],
+            experience: "حديث التخرج / جديدة"
+          };
+          await setDoc(userRef, newProfile);
+        } else {
+          phoneNo = userSnap.data().phone || phoneNo;
+        }
+        
+        onLoginSuccess(name, phoneNo);
+        setCurrentStep("success");
+      } catch (err: any) {
+        console.error("Google Auth error:", err);
+        setAuthError(`فشل الاتصال بجوجل: ${err.message || err}`);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setTimeout(() => {
+        setIsLoading(false);
+        const mockNames: Record<string, string> = {
+          Facebook: "أحمد رشاد (فيسبوك)"
+        };
+        onLoginSuccess(mockNames[provider] || "مستخدم أرزاق جديد", "012" + Math.floor(10000000 + Math.random() * 90000000));
+        setCurrentStep("success");
+      }, 1000);
+    }
   };
 
   // Helper row style

@@ -76,12 +76,36 @@
         }
       },
       "required": ["id", "type", "title", "catId", "loc", "price", "desc"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A representation of a professional user or employer profile.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "city": { "type": "string" },
+        "locationDetail": { "type": "string" },
+        "phone": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "since": { "type": "string" },
+        "walletBalance": { "type": "number" },
+        "bio": { "type": "string" },
+        "skills": { "type": "array" },
+        "experience": { "type": "string" },
+        "avatarColor": { "type": "string" }
+      },
+      "required": ["name", "phone"]
     }
   },
   "firestore": {
     "jobs": {
       "schema": "AdListing",
       "description": "Collection storing all active job and worker advertisement listings."
+    },
+    "users": {
+      "schema": "User",
+      "description": "Collection storing professional and customer user profiles."
     }
   }
 }
