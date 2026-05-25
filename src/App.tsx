@@ -3470,6 +3470,9 @@ interface ProfileScreenProps {
   setNotifSettings: React.Dispatch<React.SetStateAction<any>>;
   isLoggedOut: boolean;
   setIsLoggedOut: (value: boolean) => void;
+  usersList?: any[];
+  adsConfig?: any;
+  onSaveAd?: (adId: string, updatedAd: AdBanner) => Promise<void>;
 }
 
 const ProfileScreen=({
@@ -3492,13 +3495,19 @@ const ProfileScreen=({
   notifSettings,
   setNotifSettings,
   isLoggedOut,
-  setIsLoggedOut
+  setIsLoggedOut,
+  usersList = [],
+  adsConfig,
+  onSaveAd
 }: ProfileScreenProps)=>{
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Stats
-  const myAds = jobsList.filter(j => j.pName === profile.name || j.pName === "أبو ميرا");
+  const myAds = jobsList.filter(j => 
+    (j.posterUid && auth.currentUser && j.posterUid === auth.currentUser.uid) ||
+    (!j.posterUid && profile.name === "أبو ميرا" && j.pName === "أبو ميرا")
+  );
   const favorites = jobsList.filter(j => likedJobIds.includes(j.id));
   const myApplications = jobsList.filter(j => appliedJobIds.includes(j.id));
 
@@ -3516,11 +3525,25 @@ const ProfileScreen=({
   // Edit Profile Form
   const [editName, setEditName] = useState(profile.name);
   const [editPhone, setEditPhone] = useState(profile.phone);
+  const [editWhatsapp, setEditWhatsapp] = useState(profile.whatsapp || "");
   const [editCity, setEditCity] = useState(profile.city);
   const [editBio, setEditBio] = useState(profile.bio);
   const [editExp, setEditExp] = useState(profile.experience || "8 سنوات");
   const [editSkills, setEditSkills] = useState<string[]>(profile.skills);
   const [editSuccess, setEditSuccess] = useState(false);
+
+  // Sync edit profile form inputs with the loaded profile prop when it changes
+  useEffect(() => {
+    if (profile) {
+      setEditName(profile.name || "");
+      setEditPhone(profile.phone || "");
+      setEditWhatsapp(profile.whatsapp || "");
+      setEditCity(profile.city || "طنطا");
+      setEditBio(profile.bio || "");
+      setEditExp(profile.experience || "خبرة حديثة");
+      setEditSkills(profile.skills || []);
+    }
+  }, [profile]);
 
   // Privacy & Security Form
   const [oldPin, setOldPin] = useState("");
@@ -3577,6 +3600,7 @@ const ProfileScreen=({
       ...profile,
       name: editName,
       phone: editPhone,
+      whatsapp: editWhatsapp,
       city: editCity,
       locationDetail: `${editCity}، مصر`,
       bio: editBio,
@@ -3694,7 +3718,10 @@ const ProfileScreen=({
     setTimeout(() => setPinSuccess(false), 3500);
   };
 
+  const isAdminOrManager = auth.currentUser?.email?.toLowerCase() === "alqaidpro@gmail.com" || (profile && profile.role === "manager");
+
   const menu=[
+    ...(isAdminOrManager ? [{i:ic.admin, l:"لوحة التحكم والإدارة ⚙️", s:"تحكيم طلبات التشغيل، إدارة المستخدمين والتوثيقات", id: "admin-panel"}] : []),
     {i:ic.list,  l:"إعلاناتي",       s:`${myAds.length} إعلانات منشورة`,      badge: myAds.length > 0 ? myAds.length.toString() : undefined, id: "my-ads"},
     {i:ic.heart, l:"المفضلة",         s:`${favorites.length} عناصر محفوظة`,     badge: favorites.length > 0 ? favorites.length.toString() : undefined, id: "favorites"},
     {i:ic.bag,   l:"الطلبات",         s:`${myApplications.length} طلبات تقدمت لها`, badge: myApplications.length > 0 ? myApplications.length.toString() : undefined, id: "orders"},
@@ -4412,8 +4439,17 @@ const ProfileScreen=({
 
                 {/* Phone */}
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>رقم الهاتف / واتساب مؤكد:</label>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>رقم الهاتف:</label>
                   <input type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)}
+                    placeholder="مثال: 01012345678"
+                    style={{ width: "100%", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                </div>
+
+                {/* WhatsApp */}
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 4 }}>رقم الواتساب:</label>
+                  <input type="text" value={editWhatsapp} onChange={e => setEditWhatsapp(e.target.value)}
+                    placeholder="مثال: 01112345678"
                     style={{ width: "100%", background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: 10, color: t.text, fontSize: 12, outline: "none", boxSizing: "border-box" }} />
                 </div>
 
@@ -4665,6 +4701,22 @@ const ProfileScreen=({
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {activeSection === "admin-panel" && (
+          <div style={{ animation: "fadeIn 0.2s" }}>
+            <AdminPanel 
+              t={t} 
+              dark={dark} 
+              jobsList={jobsList} 
+              usersList={usersList} 
+              adsConfig={adsConfig} 
+              currentUserEmail={auth.currentUser?.email || ""} 
+              currentUserId={auth.currentUser?.uid || ""} 
+              onSaveAd={onSaveAd || (async () => {})} 
+              onBack={() => setActiveSection(null)}
+            />
           </div>
         )}
       </div>
@@ -4941,174 +4993,32 @@ const ProfileScreen=({
 /* ═══════════════════════════════════════════
    ROOT — App Entry Point
 ═══════════════════════════════════════════ */
-const LoginView = ({ t, dark, onLogin }: { t: ThemeType; dark: boolean; onLogin: (guestMode?: boolean, name?: string, phone?: string) => void }) => {
-  const [authMethod, setAuthMethod] = useState<"arzaq" | "legacy">("arzaq");
-  const [phone, setPhone] = useState("");
-  const [pin, setPin] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorCode, setErrorCode] = useState("");
-
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone || !pin) {
-      setErrorCode("يرجى إدخال رقم الهاتف ورمز الأمان (PIN).");
-      return;
-    }
-    
-    // Egypt Phone Validation
-    const egyptPhoneRegex = /^01[0125][0-9]{8}$/;
-    if (!egyptPhoneRegex.test(phone)) {
-      setErrorCode("عذراً، أرزاق تدعم أرقام هواتف مصر فقط (+20). يرجى إدخال رقم صحيح يبدأ بـ 010 أو 011 أو 012 أو 015 ويتكون من 11 رقماً.");
-      return;
-    }
-
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      onLogin(false, undefined, phone);
-    }, 1200);
-  };
-
-  if (authMethod === "arzaq") {
-    return (
-      <div style={{ width: "100%", height: "100dvh", display: "flex", flexDirection: "column", background: t.bg }}>
-        {/* Top switch bar with glowing toggle button */}
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
-          alignItems: "center", 
-          padding: "10px 16px", 
-          borderBottom: `1px solid ${t.border}`, 
-          background: t.surface 
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: t.textSec }}>بوابة الدخول الذكية لأرزاق مصر 🇪🇬</span>
-          <button 
-            onClick={() => setAuthMethod("legacy")}
-            style={{ 
-              background: t.blueBg, 
-              border: `1px solid ${t.blueBorder}`, 
-              borderRadius: 8,
-              padding: "5px 10px",
-              color: t.blue, 
-              fontSize: 11.5, 
-              fontWeight: 800, 
-              cursor: "pointer"
-            }}
-          >
-            الدخول القديم (رمز PIN) 🔑
-          </button>
-        </div>
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          <ArzaqAuthView 
-            t={t} 
-            dark={dark} 
-            titleMessage="سجل حسابك أو ادخل برقم الهاتف والرسائل أو جوجل ⚡"
-            onDismiss={() => onLogin(true)}
-            onLoginSuccess={(name, phone) => {
-              onLogin(false, name, phone);
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
-
+const LoginView = ({ t, dark, onLogin }: { t: ThemeType; dark: boolean; onLogin: (guestMode?: boolean, name?: string, phone?: string, email?: string, role?: string, whatsapp?: string) => void }) => {
   return (
-    <div style={{
-      fontFamily: "'Cairo','Tajawal',sans-serif",
-      background: t.bg,
-      height: "100dvh",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 24,
-      direction: "rtl"
-    }}>
-      {/* Centered logo container */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: 22,
-          background: `linear-gradient(135deg, ${C.blue}, ${C.blueDeep})`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: `0 8px 24px ${C.blue}33`,
-          marginBottom: 14
-        }}>
-          <span style={{ fontSize: 32, fontWeight: 950, color: "white" }}>أ</span>
-        </div>
-        <h1 style={{ color: t.text, fontSize: 24, fontWeight: 950, margin: "0 0 6px" }}>أرزاق · ARZAQ</h1>
-        <p style={{ color: t.textMuted, fontSize: 12, margin: 0, textAlign: "center", maxWidth: 280, lineHeight: 1.5 }}>
-          بوابتك الآمنة لتوظيف العمالة وعرض الخدمات الفنية في طنطا وكل المحافظات
-        </p>
+    <div style={{ width: "100%", height: "100dvh", display: "flex", flexDirection: "column", background: t.bg }}>
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <ArzaqAuthView 
+          t={t} 
+          dark={dark} 
+          titleMessage="قم بتسجيل الدخول أو إنشاء حسابك بالبريد الإلكتروني فقط ⚡"
+          onDismiss={() => onLogin(true)}
+          onLoginSuccess={(name, phone, email, role, whatsapp) => {
+            onLogin(false, name, phone, email, role, whatsapp);
+          }}
+        />
       </div>
-
-      <form onSubmit={handleLoginSubmit} style={{
-        background: t.card,
-        border: `1.5px solid ${t.border}`,
-        borderRadius: 16,
-        padding: 20,
-        width: "100%",
-        maxWidth: 340,
-        boxShadow: t.shadowCard
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ color: t.text, fontSize: 15, fontWeight: 800, margin: 0 }}>الدخول برقم الهاتف والرمز (PIN)</h3>
-          <button 
-            type="button" 
-            onClick={() => setAuthMethod("arzaq")} 
-            style={{ background: "none", border: "none", color: C.blue, fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
-          >
-            جرب الدخول الذكي ↩
-          </button>
-        </div>
-
-        {errorCode && (
-          <div style={{ background: t.redBg, color: C.red, padding: "8px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
-            ⚠️ {errorCode}
-          </div>
-        )}
-
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ color: t.textSec, fontSize: 11, fontWeight: 700, display: "block", marginBottom: 6 }}>رقم الموبايل المصرى:</label>
-          <div style={{ display: "flex", direction: "ltr", gap: 6 }}>
-            <span style={{ 
-              background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10,
-              padding: "11px 12px", color: t.textSec, fontSize: 13, fontWeight: "bold" 
-            }}>+20</span>
-            <input type="tel" placeholder="01xxxxxxxxx" value={phone} onChange={e => { setPhone(e.target.value); setErrorCode(""); }}
-              style={{ flex: 1, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 11, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box", textAlign: "left" }} />
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 18 }}>
-          <label style={{ color: t.textSec, fontSize: 11, fontWeight: 700, display: "block", marginBottom: 6 }}>رمز الدخول السري (PIN):</label>
-          <input type="password" placeholder="****" maxLength={4} value={pin} onChange={e => { setPin(e.target.value); setErrorCode(""); }}
-            style={{ width: "100%", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 11, color: t.text, fontSize: 13, textAlign: "center", outline: "none", boxSizing: "border-box" }} />
-        </div>
-
-        <button type="submit" disabled={isLoading}
-          style={{
-            width: "100%", background: C.blue, color: "white", border: "none", borderRadius: 10, padding: 13, fontSize: 13, fontWeight: 700, cursor: isLoading ? "not-allowed" : "pointer"
-          }}>
-          {isLoading ? "جاري التحقق من أوراق المصادقة..." : "تسجيل الدخول الآمن"}
-        </button>
-
-        <div style={{ textAlign: "center", marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button type="button" onClick={() => onLogin(true)} style={{ background: "none", border: "none", color: t.textSec, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-            🌎 الدخول كزائر مؤقتاً
-          </button>
-          <button type="button" onClick={() => setAuthMethod("arzaq")} style={{ background: "none", border: "none", color: C.blue, fontSize: 11, fontWeight: 800, cursor: "pointer" }}>
-            إنشاء حساب جديد ⚡
-          </button>
-        </div>
-      </form>
     </div>
   );
 };
 
+
 export default function App(){
   const [dark,setDark]=useState(true);
   const [tab,setTab]=useState("home");
+  const [promptPhone, setPromptPhone] = useState("");
+  const [promptWhatsapp, setPromptWhatsapp] = useState("");
+  const [promptError, setPromptError] = useState("");
+  const [promptSaving, setPromptSaving] = useState(false);
   const [jobsList,setJobsList]=useState<Job[]>(JOBS);
   const [job,setJob]=useState<Job | null>(null);
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -5248,18 +5158,21 @@ export default function App(){
 
   // User Profile Global States
   const [profile, setProfile] = useState({
-    name: "أبو ميرا",
+    name: "",
     city: "طنطا",
-    locationDetail: "طنطا، الغربية",
-    phone: "01023456789",
-    verified: true,
-    rating: 4.8,
-    since: "2022",
-    walletBalance: 350.00,
-    bio: "أعمل في مجال التشطيبات والديكورات المنزلية بخبرة تزيد عن 8 سنوات. ملتزم بالجودة والمواعيد.",
-    skills: ["سباكة", "دهان داخلي", "تركيب أدوات صحية"],
-    experience: "8 سنوات",
-    avatarColor: C.blue
+    locationDetail: "طنطا، مصر",
+    phone: "",
+    whatsapp: "",
+    verified: false,
+    rating: 5.0,
+    since: "2026",
+    walletBalance: 0.00,
+    bio: "جاري تحميل بيانات حسابك المهني...",
+    skills: [],
+    experience: "خبرة حديثة",
+    avatarColor: C.blue,
+    role: "user",
+    email: ""
   });
 
   const [likedJobIds, setLikedJobIds] = useState<number[]>([1, 2]);
@@ -5302,11 +5215,12 @@ export default function App(){
               await setDoc(userRef, { role: "admin", verified: true }, { merge: true });
             }
 
-            const fetchedProfile = {
+             const fetchedProfile = {
               name: data.name || user.displayName || "مستخدم أرزاق",
               city: data.city || "طنطا",
               locationDetail: data.locationDetail || "طنطا، الغربية",
               phone: data.phone || user.phoneNumber || "",
+              whatsapp: data.whatsapp || "",
               verified: data.verified !== undefined ? data.verified : (user.email?.toLowerCase() === "alqaidpro@gmail.com"),
               rating: data.rating || 4.8,
               since: data.since || "2026",
@@ -5324,12 +5238,13 @@ export default function App(){
             } catch (e) {}
           } else {
             // Create initial profile
-            const dummyPhone = "010" + Math.floor(10000000 + Math.random() * 90000000);
+            const signupFullname = localStorage.getItem("arzaq_signup_fullname");
             const initialProfile = {
-              name: user.displayName || user.email?.split("@")[0] || "مستخدم أرزاق جديد",
+              name: signupFullname || user.displayName || user.email?.split("@")[0] || "مستخدم أرزاق جديد",
               city: "طنطا",
               locationDetail: "طنطا، الغربية",
-              phone: user.phoneNumber || dummyPhone,
+              phone: "",
+              whatsapp: "",
               verified: user.email?.toLowerCase() === "alqaidpro@gmail.com",
               rating: 4.8,
               since: "2026",
@@ -5361,12 +5276,12 @@ export default function App(){
           } catch (e) {}
 
           const currentRole = user.email?.toLowerCase() === "alqaidpro@gmail.com" ? "admin" : "user";
-          const dummyPhone = "010" + Math.floor(10000000 + Math.random() * 90000000);
           const fallbackProfile = {
             name: user.displayName || user.email?.split("@")[0] || "مستخدم أرزاق (أوفلاين)",
             city: "طنطا",
             locationDetail: "اتصال غير مستقر",
-            phone: user.phoneNumber || dummyPhone,
+            phone: "",
+            whatsapp: "",
             verified: user.email?.toLowerCase() === "alqaidpro@gmail.com",
             rating: 4.8,
             since: "2026",
@@ -5550,8 +5465,7 @@ export default function App(){
     {k:"cats",  l:"الفئات",  d:ic.grid},
     {k:"post",  l:"",         d:ic.plus},
     {k:"chats", l:"الدردشات",d:ic.chat},
-    {k:"profile",l:"حساب",   d:ic.user},
-    ...(isAdminOrManager ? [{k:"admin", l:"لوحة الإدارة", d:ic.admin}] : [])
+    {k:"profile",l:"حساب",   d:ic.user}
   ];
 
   const handleAddJob = async (newJob: Job) => {
@@ -5591,11 +5505,14 @@ export default function App(){
           dark={dark} 
           titleMessage={titleMsg}
           onDismiss={() => setTab("home")}
-          onLoginSuccess={(name, phone) => {
+          onLoginSuccess={(name, phone, email, role, whatsapp) => {
             setProfile(prev => ({
               ...prev,
               name: name,
-              phone: phone,
+              phone: phone || "",
+              whatsapp: whatsapp || "",
+              email: email || "",
+              role: role || "user",
               verified: true
             }));
             setIsGuest(false);
@@ -5609,7 +5526,7 @@ export default function App(){
       case"cats":   return <CategoriesScreen t={t} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} setTab={setTab} jobsList={jobsList} onJob={setJob} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds}/>;
       case"post":   return <PostScreen t={t} onAddJob={handleAddJob} profile={profile}/>;
       case"chats":  return <ChatsScreen t={t} dark={dark}/>;
-      case"admin":  return <AdminPanel t={t} dark={dark} jobsList={jobsList} usersList={usersList} adsConfig={adsConfig} currentUserEmail={auth.currentUser?.email || ""} currentUserId={auth.currentUser?.uid || ""} onSaveAd={handleSaveAd} onBack={()=>setTab("home")}/>;
+      case"admin":  return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId} usersList={usersList} profile={profile}/>;
       case"profile":return <ProfileScreen 
         t={t} 
         dark={dark} 
@@ -5630,7 +5547,10 @@ export default function App(){
         notifSettings={notifSettings}
         setNotifSettings={setNotifSettings}
         isLoggedOut={isLoggedOut}
-        setIsLoggedOut={setIsLoggedOut}/>;
+        setIsLoggedOut={setIsLoggedOut}
+        usersList={usersList}
+        adsConfig={adsConfig}
+        onSaveAd={handleSaveAd}/>;
       default:      return <HomeScreen jobsList={jobsList} t={t} dark={dark} onJob={setJob} onCats={()=>setTab("cats")} selectedLocation={selectedLocation} catFilter={catFilter} setCatFilter={setCatFilter} subFilter={subFilter} setSubFilter={setSubFilter} likedJobIds={likedJobIds} setLikedJobIds={setLikedJobIds} adsConfig={adsConfig} onEditAd={setEditingAdId} usersList={usersList} profile={profile}/>;
     }
   };
@@ -5639,12 +5559,15 @@ export default function App(){
     return <LoginView 
       t={t} 
       dark={dark} 
-      onLogin={(guestMode, name, phone) => {
-        if (name || phone) {
+      onLogin={(guestMode, name, phone, email, role, whatsapp) => {
+        if (name || phone || email || whatsapp) {
           setProfile(prev => ({
             ...prev,
             name: name || prev.name,
-            phone: phone || prev.phone,
+            phone: phone || prev.phone || "",
+            whatsapp: whatsapp || prev.whatsapp || "",
+            email: email || prev.email || "",
+            role: role || prev.role || "user",
             verified: true
           }));
         }
@@ -5902,6 +5825,160 @@ export default function App(){
             setEditingAdId(null);
           }}
         />
+      )}
+
+      {/* ── MANDATORY PHONE & WHATSAPP REGISTRATION PROMPT ── */}
+      {!isLoggedOut && !isGuest && (!profile.phone || !profile.phone.trim()) && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.8)", backdropFilter: "blur(5px)",
+          zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center",
+          direction: "rtl", padding: 20
+        }}>
+          <div style={{
+            background: t.surface, border: `2px solid ${C.blue}`, borderRadius: 20,
+            padding: 24, width: "100%", maxWidth: 360, boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: "50%", background: t.blueBg,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28
+              }}>
+                📞
+              </div>
+            </div>
+
+            <h3 style={{ color: t.text, fontSize: 17, fontWeight: 900, margin: "0 0 8px", textAlign: "center" }}>
+              إكمال الملف الشخصي مطلوب ⚠️
+            </h3>
+            <p style={{ color: t.textSec, fontSize: 12, lineHeight: 1.6, margin: "0 0 20px", textAlign: "center" }}>
+              أهلاً بك في أرزاق! لتتمكن من التفاعل ونشر الإعلانات وتلقي طلبات التشغيل، يرجى تزويد زملائك والزبائن برقم هاتفك لسهولة التواصل الفوري المباشر.
+            </p>
+
+            {promptError && (
+              <div style={{ background: t.redBg, color: "#EF4444", padding: 10, borderRadius: 10, fontSize: 11.5, fontWeight: 700, marginBottom: 14 }}>
+                ⚠️ {promptError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 6 }}>
+                  رقم الهاتف (الخلوي):
+                </label>
+                <input 
+                  type="text" 
+                  value={promptPhone} 
+                  onChange={e => {
+                    setPromptError("");
+                    setPromptPhone(e.target.value);
+                  }}
+                  placeholder="مثال: 01012345678"
+                  style={{
+                    width: "100%", background: t.card, border: `1px solid ${t.border}`,
+                    borderRadius: 12, padding: 12, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box"
+                  }} 
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: t.textSec, display: "block", marginBottom: 6 }}>
+                  رقم الواتساب:
+                </label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <input 
+                    type="text" 
+                    value={promptWhatsapp} 
+                    onChange={e => {
+                      setPromptError("");
+                      setPromptWhatsapp(e.target.value);
+                    }}
+                    placeholder="مثال: 01112345678"
+                    style={{
+                      width: "100%", background: t.card, border: `1px solid ${t.border}`,
+                      borderRadius: 12, padding: 12, color: t.text, fontSize: 13, outline: "none", boxSizing: "border-box"
+                    }} 
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setPromptWhatsapp(promptPhone)}
+                    style={{
+                      background: "none", border: "none", color: C.blue, fontSize: 10.5,
+                      fontWeight: 700, cursor: "pointer", alignSelf: "flex-start", padding: 0
+                    }}
+                  >
+                    💡 نسخ من رقم الهاتف أعلاه
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={promptSaving}
+              onClick={async () => {
+                const phoneVal = promptPhone.trim();
+                const whatsappVal = promptWhatsapp.trim() || phoneVal;
+
+                if (!phoneVal) {
+                  setPromptError("يجب كتابة رقم الهاتف للتواصل.");
+                  return;
+                }
+                const egyptPhoneRegex = /^01[0125][0-9]{8}$/;
+                if (!egyptPhoneRegex.test(phoneVal)) {
+                  setPromptError("يرجى إدخال رقم هاتف محمول مصري صحيح يبدأ بـ 01 ويتكون من 11 رقماً.");
+                  return;
+                }
+                if (whatsappVal && !egyptPhoneRegex.test(whatsappVal)) {
+                  setPromptError("يرجى إدخال رقم واتساب مصري صحيح يبدأ بـ 01 ويتكون من 11 رقماً.");
+                  return;
+                }
+
+                setPromptSaving(true);
+                
+                // Construct target profile
+                const updatedProfile = {
+                  ...profile,
+                  phone: phoneVal,
+                  whatsapp: whatsappVal
+                };
+
+                // OPTIMISTIC UPDATE: Set React state and localStorage immediately
+                // This ensures the modal disappears instantly!
+                setProfile(updatedProfile);
+                if (auth.currentUser) {
+                  try {
+                    localStorage.setItem("arzaq_fallback_profile_" + auth.currentUser.uid, JSON.stringify(updatedProfile));
+                  } catch (e) {}
+                }
+
+                // Run Firestore write in background to avoid any network locks
+                if (auth.currentUser) {
+                  setDoc(doc(db, "users", auth.currentUser.uid), updatedProfile, { merge: true })
+                    .then(() => {
+                      console.log("Profile details synced with Firestore successfully in background.");
+                    })
+                    .catch((err) => {
+                      console.error("Background profile sync error:", err);
+                    });
+                }
+
+                // Reset prompt inputs and turn off saving state
+                setPromptPhone("");
+                setPromptWhatsapp("");
+                setPromptSaving(false);
+              }}
+              style={{
+                width: "100%", background: C.blue, color: "#fff", border: "none",
+                borderRadius: 12, padding: "14px 0", fontSize: 13, fontWeight: 800,
+                cursor: promptSaving ? "not-allowed" : "pointer",
+                boxShadow: "0 4px 12px rgba(14, 165, 233, 0.25)"
+              }}
+            >
+              {promptSaving ? "جاري تفعيل إعدادات حسابك..." : "حفظ والمتابعة للتطبيق 🚀"}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

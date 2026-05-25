@@ -14,22 +14,13 @@ import {
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Exact Firebase Web Config provided by the user
-const firebaseConfig = {
-  apiKey: "AIzaSyDavPVw8l0YIrpVEledPh2gMKO-LYLIfOI",
-  authDomain: "arzeq-25bfd.firebaseapp.com",
-  projectId: "arzeq-25bfd",
-  storageBucket: "arzeq-25bfd.firebasestorage.app",
-  messagingSenderId: "801723961908",
-  appId: "1:801723961908:web:dd86e5288da7f90b317061",
-  measurementId: "G-CHEH7NW4B0"
-};
+import firebaseConfig from "../firebase-applet-config.json";
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-// Initialize Services
-export const db = getFirestore(app);
+// Initialize Services with specified databaseId
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
 // ── ERROR HANDLING AS INSTRUCTED BY SKILL ──

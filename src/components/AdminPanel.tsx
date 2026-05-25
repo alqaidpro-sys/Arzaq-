@@ -187,7 +187,7 @@ export const AdminPanel = ({
           background: t.card, border: `1px solid ${t.border}`, borderRadius: 10,
           color: t.text, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.1s"
         }}>
-          الرجوع للرئيسية ↩
+          رجوع ↩
         </button>
       </div>
 

@@ -30,7 +30,7 @@ interface ThemeType {
 interface ArzaqAuthViewProps {
   t: ThemeType;
   dark: boolean;
-  onLoginSuccess: (userName: string, phone: string) => void;
+  onLoginSuccess: (userName: string, phone: string, email?: string, role?: string, whatsapp?: string) => void;
   onDismiss?: () => void;
   titleMessage?: string; // e.g. "سجل الآن لنشر إعلانك مجاناً وبثوانٍ!"
 }
@@ -199,6 +199,9 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
       
       if (isSignUpMode) {
         try {
+          if (fullName) {
+            localStorage.setItem("arzaq_signup_fullname", fullName);
+          }
           userCredential = await createUserWithEmailAndPassword(auth, email, password);
         } catch (createErr: any) {
           if (createErr.code === "auth/email-already-in-use") {
@@ -239,7 +242,9 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
       const userSnap = await getDoc(userRef);
       
       let pName = fullName;
-      let phoneNo = "011" + Math.floor(10000000 + Math.random() * 90000000);
+      let phoneNo = "";
+      let whatsappNo = "";
+      let roleNo = email.toLowerCase() === "alqaidpro@gmail.com" ? "admin" : "user";
       
       if (!userSnap.exists()) {
         if (!pName) {
@@ -249,23 +254,28 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
           name: pName,
           city: "طنطا",
           locationDetail: "طنطا، مصر",
-          phone: phoneNo,
-          verified: true,
+          phone: "",
+          whatsapp: "",
+          verified: email.toLowerCase() === "alqaidpro@gmail.com",
           rating: 4.8,
           since: "2026",
           walletBalance: 350.00,
           bio: "أهلاً بك في حسابي المهني الجديد على منصة أرزاق.",
           skills: [],
-          experience: "حديث التخرج / جديدة"
+          experience: "حديث التخرج / جديدة",
+          role: roleNo,
+          email: email
         };
         await setDoc(userRef, newProfile);
       } else {
         const data = userSnap.data();
         pName = data.name || pName || "مستفيد أرزاق";
-        phoneNo = data.phone || phoneNo;
+        phoneNo = data.phone || "";
+        whatsappNo = data.whatsapp || "";
+        roleNo = data.role || roleNo;
       }
       
-      onLoginSuccess(pName, phoneNo);
+      onLoginSuccess(pName, phoneNo, email, roleNo, whatsappNo);
       setCurrentStep("success");
     } catch (err: any) {
       console.error("Email auth error on Arzaq:", err);
@@ -431,7 +441,10 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
 
               {/* Red brand/interactive button. Customized to our Blue brand color! */}
               <button 
-                onClick={() => setCurrentStep("methods")}
+                onClick={() => {
+                  setAuthError("");
+                  setCurrentStep("email_form");
+                }}
                 style={{
                   width: "100%",
                   background: brandBlue,
@@ -914,7 +927,7 @@ export const ArzaqAuthView = ({ t, dark, onLoginSuccess, onDismiss, titleMessage
               type="button"
               onClick={() => {
                 setAuthError("");
-                setCurrentStep("methods");
+                setCurrentStep("welcome");
               }}
               style={{
                 background: t.surface, border: `1px solid ${t.border}`, borderRadius: "50%",
